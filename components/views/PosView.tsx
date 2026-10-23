@@ -7,9 +7,9 @@ import { useModal } from '@/components/Modal'
 import { useToast } from '@/components/Toast'
 import { useReceipt } from '@/components/Receipt'
 import { useStore } from '@/lib/store'
-import { num, rp, uid } from '@/lib/format'
-import { adjustStock } from '@/lib/selectors'
-import { CATEGORIES, PAY_METHODS, type Sale } from '@/lib/types'
+import { addDays, fDate, num, rp, tempoLabel, uid } from '@/lib/format'
+import { adjustStock, priceFor } from '@/lib/selectors'
+import { CATEGORIES, PAY_METHODS, PRICE_TYPES, TEMPO_PRESETS, type PriceType, type Sale } from '@/lib/types'
 import type { IconName } from '@/lib/icons'
 
 const catIcon = (cat: string): IconName =>
@@ -31,16 +31,31 @@ export default function PosView() {
   const [cash, setCash] = useState(0)
   const [cashText, setCashText] = useState('')
   const [bumpKey, setBumpKey] = useState(0)
+  const [priceType, setPriceType] = useState<PriceType>('Pelanggan')
+  const [settle, setSettle] = useState<'Lunas' | 'Tempo'>('Lunas')
+  const [tempo, setTempo] = useState(db.settings.dueDays || 14)
+  const [dp, setDp] = useState(0)
+  const [dpText, setDpText] = useState('')
 
   const calc = useMemo(() => {
-    const sub = cart.reduce((a, i) => a + i.qty * (db.products.find((p) => p.id === i.pid)?.price ?? 0), 0)
+    const sub = cart.reduce((a, i) => {
+      const p = db.products.find((x) => x.id === i.pid)
+      return a + i.qty * (p ? priceFor(p, priceType) : 0)
+    }, 0)
     const d = Math.min(disc, sub)
     const tax = Math.round(((sub - d) * (db.settings.tax || 0)) / 100)
     const total = sub - d + tax
     return { sub, disc: d, tax, total, change: cash - total }
-  }, [cart, disc, cash, db.products, db.settings.tax])
+  }, [cart, disc, cash, db.products, db.settings.tax, priceType])
 
   const count = cart.reduce((a, i) => a + i.qty, 0)
+
+  // Tipe harga & tempo default mengikuti pelanggan yang dipilih.
+  useEffect(() => {
+    const c = db.customers.find((x) => x.id === cust)
+    if (c?.priceType) setPriceType(c.priceType)
+    setTempo(c?.dueDays || db.settings.dueDays || 14)
+  }, [cust, db.customers, db.settings.dueDays])
 
   // Pelanggan bisa dipilih dari halaman "Pelanggan" sebelum masuk ke Kasir.
   useEffect(() => setCust(posCustomer), [posCustomer])
@@ -92,32 +107,41 @@ export default function PosView() {
       toast(`Diskon melebihi batas ${db.settings.maxDiscount}%`, 'err')
       return
     }
-    if (method === 'Tunai' && cash < calc.total) {
+    if (method === 'Tunai' && settle === 'Lunas' && cash < calc.total) {
       toast('Uang diterima kurang dari total', 'err')
+      return
+    }
+    if (settle === 'Tempo' && dp > calc.total) {
+      toast('Uang muka melebihi total transaksi', 'err')
       return
     }
 
     const now = new Date().toISOString()
     const n = db.seq.sale
     const invoice = `${db.settings.invoicePrefix}-${now.slice(0, 10).replace(/-/g, '')}-${String(n).padStart(3, '0')}`
+    const dueDays = settle === 'Tempo' ? tempo : db.settings.dueDays || 14
+    const paid = settle === 'Tempo' ? Math.min(dp, calc.total) : method === 'Tunai' ? cash : calc.total
     const sale: Sale = {
       id: uid('s'),
       inv: invoice,
       date: now,
+      dueDate: addDays(now, dueDays),
+      dueDays,
       custId: cust,
       cashier: db.settings.cashier,
+      priceType,
       items: cart.map((i) => {
         const p = db.products.find((x) => x.id === i.pid)!
-        return { pid: p.id, name: p.name, sku: p.sku, qty: i.qty, price: p.price, cost: p.cost }
+        return { pid: p.id, name: p.name, sku: p.sku, qty: i.qty, price: priceFor(p, priceType), cost: p.cost }
       }),
       subtotal: calc.sub,
       discount: calc.disc,
       tax: calc.tax,
       total: calc.total,
       method,
-      paid: method === 'Tunai' ? cash : calc.total,
-      change: method === 'Tunai' ? calc.change : 0,
-      status: 'Lunas',
+      paid,
+      change: settle === 'Tempo' ? 0 : method === 'Tunai' ? calc.change : 0,
+      status: paid >= calc.total ? 'Lunas' : 'Belum Lunas',
     }
 
     update((d) => {
@@ -131,10 +155,17 @@ export default function PosView() {
     setDiscText('')
     setCash(0)
     setCashText('')
+    setDp(0)
+    setDpText('')
+    setSettle('Lunas')
     setCust('c0')
     setPosCustomer('c0')
     document.body.classList.remove('cart-open')
-    toast('Pembayaran berhasil · ' + sale.inv)
+    toast(
+      sale.status === 'Belum Lunas'
+        ? `Piutang ${rp(sale.total - sale.paid)} · jatuh tempo ${fDate(sale.dueDate!)}`
+        : 'Pembayaran berhasil · ' + sale.inv,
+    )
     openReceipt(sale, true)
   }
 
@@ -148,6 +179,20 @@ export default function PosView() {
         <div>
           <div className="toolbar">
             <SearchBox value={q} onChange={setQ} placeholder="Cari nama produk atau SKU…" />
+            <div className="price-switch" role="group" aria-label="Tipe harga">
+              <span className="ps-lbl">Harga</span>
+              {PRICE_TYPES.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={t === priceType ? 'active' : ''}
+                  onClick={() => setPriceType(t)}
+                  title={t === 'Teknisi' ? 'Harga khusus teknisi / rekanan' : 'Harga jual pelanggan umum'}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="cat-chips" id="posCats">
@@ -175,7 +220,10 @@ export default function PosView() {
                     </div>
                     <div className="nm">{p.name}</div>
                     <div className="mono muted">{p.sku}</div>
-                    <div className="pr">{rp(p.price)}</div>
+                    <div className="pr">{rp(priceFor(p, priceType))}</div>
+                    <div className="pr-alt">
+                      {priceType === 'Teknisi' ? 'Pelanggan' : 'Teknisi'} {rp(priceType === 'Teknisi' ? p.price : p.priceTech)}
+                    </div>
                     <div className="small">
                       <span className={`badge ${c}`}>{s === 'Habis' ? 'Habis' : `Stok ${p.stock}`}</span>
                     </div>
@@ -192,7 +240,12 @@ export default function PosView() {
 
         <aside className="card cart" id="cart">
           <div className="card-h">
-            <h3>Keranjang ({count})</h3>
+            <h3>
+              Keranjang ({count}){' '}
+              <span className={`badge ${priceType === 'Teknisi' ? 'b' : ''}`} style={{ verticalAlign: 'middle' }}>
+                {priceType}
+              </span>
+            </h3>
             <div style={{ display: 'flex', gap: 6 }}>
               {cart.length ? (
                 <button
@@ -227,6 +280,7 @@ export default function PosView() {
                 {db.customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
+                    {c.priceType === 'Teknisi' ? ' (Teknisi)' : ''}
                   </option>
                 ))}
               </select>
@@ -242,7 +296,7 @@ export default function PosView() {
                     <div className="info">
                       <b>{p.name}</b>
                       <span className="muted small">
-                        {rp(p.price)} · {rp(p.price * i.qty)}
+                        {rp(priceFor(p, priceType))} · {rp(priceFor(p, priceType) * i.qty)}
                       </span>
                     </div>
                     <div className="qty">
@@ -314,7 +368,63 @@ export default function PosView() {
               ))}
             </div>
 
-            {method === 'Tunai' ? (
+            <div className="tempo-sel" role="group" aria-label="Jenis pembayaran">
+              <button
+                type="button"
+                className={settle === 'Lunas' ? 'active' : ''}
+                onClick={() => setSettle('Lunas')}
+              >
+                <Icon name="check" /> Bayar Lunas
+              </button>
+              <button
+                type="button"
+                className={settle === 'Tempo' ? 'active' : ''}
+                onClick={() => setSettle('Tempo')}
+              >
+                <Icon name="calendar" /> Tempo / Bon
+              </button>
+            </div>
+
+            {settle === 'Tempo' ? (
+              <>
+                <div className="tempo-chips" role="group" aria-label="Lama tempo">
+                  {TEMPO_PRESETS.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      className={tempo === d ? 'active' : ''}
+                      onClick={() => setTempo(d)}
+                    >
+                      {tempoLabel(d)}
+                    </button>
+                  ))}
+                </div>
+                <div className="sumrow" style={{ alignItems: 'center' }}>
+                  <span className="muted">Uang Muka (DP)</span>
+                  <input
+                    className="input"
+                    style={{ width: 150, height: 34, textAlign: 'right' }}
+                    inputMode="numeric"
+                    value={dpText}
+                    placeholder="0"
+                    onChange={(e) => {
+                      setDpText(e.target.value)
+                      setDp(num(e.target.value))
+                    }}
+                  />
+                </div>
+                <div className="sumrow small">
+                  <span className="muted">Jatuh tempo</span>
+                  <span>{fDate(addDays(new Date().toISOString(), tempo))}</span>
+                </div>
+                <div className="sumrow b">
+                  <span>Sisa jadi piutang</span>
+                  <span style={{ color: calc.total - dp > 0 ? 'var(--danger)' : 'var(--success)' }}>
+                    {rp(Math.max(0, calc.total - dp))}
+                  </span>
+                </div>
+              </>
+            ) : method === 'Tunai' ? (
               <>
                 <div className="sumrow" style={{ alignItems: 'center' }}>
                   <span className="muted">Uang Diterima</span>
@@ -365,7 +475,7 @@ export default function PosView() {
               disabled={!cart.length}
               onClick={pay}
             >
-              <Icon name="check" /> Proses Pembayaran
+              <Icon name="check" /> {settle === 'Tempo' ? 'Simpan & Catat Piutang' : 'Proses Pembayaran'}
             </button>
           </div>
         </aside>

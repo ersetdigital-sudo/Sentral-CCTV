@@ -3,6 +3,7 @@ export type IconName =
   | 'chart' | 'settings' | 'menu' | 'x' | 'search' | 'plus' | 'edit' | 'trash' | 'eye'
   | 'printer' | 'check' | 'alert' | 'info' | 'map' | 'camera' | 'money' | 'download'
   | 'minus' | 'calendar' | 'refresh' | 'more' | 'arrowUp' | 'arrowDown' | 'wallet' | 'bell'
+  | 'chat'
 
 /** Inline SVG paths (gaya Lucide) — sama persis dengan file aslinya. */
 export const ICONS: Record<IconName, string> = {
@@ -40,4 +41,5 @@ export const ICONS: Record<IconName, string> = {
   arrowDown: '<path d="M12 5v14M19 12l-7 7-7-7"/>',
   wallet: '<path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+  chat: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-4.1-.9L3 21l1.9-4.9A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/>',
 }

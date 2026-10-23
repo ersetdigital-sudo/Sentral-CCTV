@@ -25,6 +25,7 @@ export default function SettingsView() {
     paper: db.settings.paper,
     defaultMin: String(db.settings.defaultMin),
     cashier: db.settings.cashier,
+    dueDays: String(db.settings.dueDays),
   }))
   const [err, setErr] = useState<Record<string, boolean>>({})
 
@@ -56,6 +57,7 @@ export default function SettingsView() {
       d.settings.tax = num(s.tax)
       d.settings.maxDiscount = num(s.maxDiscount)
       d.settings.defaultMin = num(s.defaultMin)
+      d.settings.dueDays = num(s.dueDays) || 14
     })
     toast('Pengaturan disimpan')
   }
@@ -215,6 +217,16 @@ export default function SettingsView() {
                   min={0}
                   value={s.defaultMin}
                   onChange={(e) => set('defaultMin', e.target.value)}
+                />
+              </Field>
+              <Field label="Tempo Piutang Default (hari)">
+                <input
+                  className="input"
+                  type="number"
+                  min={0}
+                  max={180}
+                  value={s.dueDays}
+                  onChange={(e) => set('dueDays', e.target.value)}
                 />
               </Field>
             </div>

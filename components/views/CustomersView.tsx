@@ -8,7 +8,7 @@ import { ModalFoot, useModal } from '@/components/Modal'
 import { DrawerFoot, useDrawer } from '@/components/Drawer'
 import { useToast } from '@/components/Toast'
 import { useStore } from '@/lib/store'
-import { fDate, rp, uid } from '@/lib/format'
+import { fDate, num, rp, tempoLabel, uid } from '@/lib/format'
 import { custDebt, custJobs, custSales, jobTotal } from '@/lib/selectors'
 import type { Customer } from '@/lib/types'
 
@@ -50,7 +50,16 @@ export default function CustomersView() {
     const j = custJobs(db, c.id)
     const debt = custDebt(db, c.id)
     return [
-      { label: 'Nama', value: <b>{c.name}</b> },
+      { label: 'Nama', value: (
+        <>
+          <b>{c.name}</b>
+          {c.priceType === 'Teknisi' ? (
+            <span className="badge b" style={{ marginLeft: 6 }}>
+              Teknisi
+            </span>
+          ) : null}
+        </>
+      ) },
       { label: 'Telepon', value: c.phone },
       { label: 'Alamat', value: c.address, cls: 'wrap' },
       { label: 'Pembelian', value: `${s.length} trx`, align: 'r' },
@@ -153,6 +162,20 @@ function CustomerDetail({ customer }: { customer: Customer }) {
             <span style={{ textAlign: 'right' }}>{customer.address}</span>
           </div>
           <div className="dw-row">
+            <span className="muted">Tipe Harga</span>
+            <b>
+              {customer.priceType === 'Teknisi' ? (
+                <span className="badge b">Teknisi</span>
+              ) : (
+                <span className="badge">Pelanggan</span>
+              )}
+            </b>
+          </div>
+          <div className="dw-row">
+            <span className="muted">Tempo Default</span>
+            <b>{customer.dueDays ? tempoLabel(customer.dueDays) : 'Ikut pengaturan toko'}</b>
+          </div>
+          <div className="dw-row">
             <span className="muted">Sisa Tagihan</span>
             <b style={{ color: debt > 0 ? 'var(--danger)' : 'var(--success)' }}>{rp(debt)}</b>
           </div>
@@ -238,6 +261,8 @@ function CustomerForm({ customer }: { customer?: Customer }) {
     name: customer?.name ?? '',
     phone: customer?.phone ?? '',
     address: customer?.address ?? '',
+    priceType: customer?.priceType ?? 'Pelanggan',
+    dueDays: customer?.dueDays ? String(customer.dueDays) : '',
   })
   const [err, setErr] = useState<Record<string, boolean>>({})
 
@@ -253,7 +278,13 @@ function CustomerForm({ customer }: { customer?: Customer }) {
       toast('Format nomor telepon tidak valid', 'err')
       return
     }
-    const d = { name: e.name.trim(), phone: e.phone.trim(), address: e.address }
+    const d = {
+      name: e.name.trim(),
+      phone: e.phone.trim(),
+      address: e.address,
+      priceType: e.priceType,
+      dueDays: num(e.dueDays) || undefined,
+    }
     update((draft) => {
       if (customer) {
         const c = draft.customers.find((x) => x.id === customer.id)
@@ -291,6 +322,28 @@ function CustomerForm({ customer }: { customer?: Customer }) {
             value={e.address}
             onChange={(ev) => setE((p) => ({ ...p, address: ev.target.value }))}
           />
+        </Field>
+        <Field label="Tempo Default" className="full">
+          <select
+            className="input"
+            value={e.dueDays}
+            onChange={(ev) => setE((p) => ({ ...p, dueDays: ev.target.value }))}
+          >
+            <option value="">Ikut pengaturan toko</option>
+            <option value="7">1 minggu</option>
+            <option value="14">2 minggu</option>
+            <option value="30">1 bulan</option>
+          </select>
+        </Field>
+        <Field label="Tipe Harga Default" className="full">
+          <select
+            className="input"
+            value={e.priceType}
+            onChange={(ev) => setE((p) => ({ ...p, priceType: ev.target.value as 'Pelanggan' | 'Teknisi' }))}
+          >
+            <option value="Pelanggan">Pelanggan umum (harga retail)</option>
+            <option value="Teknisi">Teknisi / rekanan (harga khusus)</option>
+          </select>
         </Field>
       </form>
 

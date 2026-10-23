@@ -1,3 +1,7 @@
+export type PriceType = 'Pelanggan' | 'Teknisi'
+
+export const PRICE_TYPES: PriceType[] = ['Pelanggan', 'Teknisi']
+
 export type Product = {
   id: string
   sku: string
@@ -5,7 +9,10 @@ export type Product = {
   cat: string
   brand: string
   cost: number
+  /** Harga jual untuk pelanggan umum (retail). */
   price: number
+  /** Harga jual khusus teknisi / rekanan. */
+  priceTech: number
   stock: number
   min: number
   unit: string
@@ -16,6 +23,10 @@ export type Customer = {
   name: string
   phone: string
   address: string
+  /** Tipe harga default saat pelanggan ini bertransaksi. */
+  priceType?: PriceType
+  /** Tempo default (hari). Kosong = ikut pengaturan toko. */
+  dueDays?: number
 }
 
 export type Supplier = {
@@ -40,8 +51,14 @@ export type Sale = {
   id: string
   inv: string
   date: string
+  /** Jatuh tempo pembayaran (ISO). */
+  dueDate?: string
+  /** Tempo yang dipilih saat transaksi (hari). */
+  dueDays?: number
   custId: string
   cashier: string
+  /** Tipe harga yang dipakai pada transaksi ini. */
+  priceType?: PriceType
   items: SaleItem[]
   subtotal: number
   discount: number
@@ -107,6 +124,8 @@ export type Settings = {
   cashier: string
   paper: string
   footer: string
+  /** Tempo piutang default (hari) untuk transaksi baru. */
+  dueDays: number
   logo?: string
 }
 
@@ -147,3 +166,6 @@ export const JOB_STATUS = [
 export const TECHS = ['Andi Saputra', 'Budi Hartono', 'Dimas Pratama', 'Eko Wijaya']
 
 export const PAY_METHODS = ['Tunai', 'Transfer Bank', 'QRIS', 'Debit']
+
+/** Pilihan tempo (jatuh tempo) saat transaksi. */
+export const TEMPO_PRESETS = [7, 14, 30]

@@ -2,9 +2,39 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { seed } from './seed'
+import { addDays } from './format'
 import type { DB } from './types'
 
 const KEY = 'sentral_cctv_demo_v1'
+const DEFAULT_DUE_DAYS = 14
+
+/**
+ * Backfill data lama di localStorage supaya kompatibel dengan fitur baru
+ * (harga teknisi, tipe harga pelanggan, jatuh tempo piutang).
+ */
+function normalize(db: DB): DB {
+  db.settings = db.settings ?? ({} as DB['settings'])
+  db.settings.dueDays = Number(db.settings.dueDays) || DEFAULT_DUE_DAYS
+  db.products?.forEach((p) => {
+    if (!Number.isFinite(p.priceTech) || p.priceTech <= 0) {
+      p.priceTech = Math.max(p.cost, Math.round(p.price * 0.92))
+    }
+  })
+  db.customers?.forEach((c) => {
+    if (!c.priceType) c.priceType = 'Pelanggan'
+  })
+  db.sales?.forEach((s) => {
+    if (!s.priceType) s.priceType = 'Pelanggan'
+    if (!s.dueDate) s.dueDate = addDays(s.date, db.settings.dueDays)
+    if (!s.dueDays) {
+      s.dueDays = Math.max(
+        0,
+        Math.round((new Date(s.dueDate).getTime() - new Date(s.date).getTime()) / 86400000),
+      )
+    }
+  })
+  return db
+}
 
 export type InventoryFilter = { q: string; cat: string; st: string }
 
@@ -38,7 +68,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const raw = window.localStorage.getItem(KEY)
       if (raw) {
         const parsed = JSON.parse(raw) as DB
-        if (parsed?.products?.length) setDb(parsed)
+        if (parsed?.products?.length) setDb(normalize(parsed))
       }
     } catch {
       /* mode privat / storage diblokir -> pakai seed */

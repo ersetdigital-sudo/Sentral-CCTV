@@ -107,7 +107,16 @@ export default function InventoryView() {
       { label: 'Kategori', value: p.cat },
       { label: 'Merek', value: p.brand },
       { label: 'Modal', value: rp(p.cost), align: 'r' },
-      { label: 'Jual', value: rp(p.price), align: 'r' },
+      {
+        label: 'Harga Jual',
+        align: 'r',
+        value: (
+          <>
+            <b>{rp(p.price)}</b>
+            <div className="small muted">Teknisi {rp(p.priceTech)}</div>
+          </>
+        ),
+      },
       { label: 'Stok', value: <b>{p.stock}</b>, align: 'r' },
       { label: 'Min', value: p.min, align: 'r' },
       { label: 'Status', value: <span className={`badge ${c}`}>{s}</span> },
@@ -224,6 +233,7 @@ function ProductDetail({ product }: { product: Product }) {
   const { close } = useDrawer()
   const [s, c] = stockStatus(product)
   const margin = product.price - product.cost
+  const marginTech = product.priceTech - product.cost
 
   const log = db.stockLog
     .filter((l) => l.pid === product.id)
@@ -232,16 +242,25 @@ function ProductDetail({ product }: { product: Product }) {
 
   return (
     <>
-      <div className="dw-hero">
-        <div className="lbl">Harga Jual</div>
-        <div className="val">{rp(product.price)}</div>
-        <div className="sub">
-          <span className="badge">{s}</span>
-          <span>
-            Margin {rp(margin)} · {Math.round((margin / product.price) * 100)}%
-          </span>
+      <section className="dw-section" style={{ marginBottom: 14 }}>
+        <h4>Harga Jual</h4>
+        <div className="price-pair">
+          <div className="price-cell">
+            <small>Pelanggan</small>
+            <b>{rp(product.price)}</b>
+            <span>margin {Math.round((margin / product.price) * 100)}%</span>
+          </div>
+          <div className="price-cell tech">
+            <small>Teknisi</small>
+            <b>{rp(product.priceTech)}</b>
+            <span>margin {Math.round((marginTech / product.priceTech) * 100)}%</span>
+          </div>
         </div>
-      </div>
+        <div className="sub" style={{ marginTop: 8 }}>
+          <span className="badge">{s}</span>
+          <span>Selisih teknisi {rp(product.price - product.priceTech)}</span>
+        </div>
+      </section>
 
       <section className="dw-section">
         <h4>Informasi Produk</h4>
@@ -330,6 +349,7 @@ function ProductForm({ product }: { product?: Product }) {
     brand: product?.brand ?? '',
     cost: product ? String(product.cost) : '',
     price: product ? String(product.price) : '',
+    priceTech: product ? String(product.priceTech) : '',
     stock: product ? String(product.stock) : '0',
     min: product ? String(product.min) : String(db.settings.defaultMin),
   })
@@ -344,6 +364,7 @@ function ProductForm({ product }: { product?: Product }) {
       name: !e.name.trim(),
       cost: num(e.cost) < 1,
       price: num(e.price) < 1,
+      priceTech: num(e.priceTech) < 1,
       min: num(e.min) < 0,
       stock: num(e.stock) < 0,
     }
@@ -360,6 +381,7 @@ function ProductForm({ product }: { product?: Product }) {
       cat: e.cat,
       cost: num(e.cost),
       price: num(e.price),
+      priceTech: num(e.priceTech),
       stock: num(e.stock),
       min: num(e.min),
     }
@@ -371,6 +393,14 @@ function ProductForm({ product }: { product?: Product }) {
     }
     if (d.price < d.cost) {
       toast('Harga jual lebih kecil dari harga modal', 'err')
+      return
+    }
+    if (d.priceTech < d.cost) {
+      toast('Harga teknisi lebih kecil dari harga modal', 'err')
+      return
+    }
+    if (d.priceTech > d.price) {
+      toast('Harga teknisi tidak boleh lebih tinggi dari harga pelanggan', 'err')
       return
     }
 
@@ -457,6 +487,15 @@ function ProductForm({ product }: { product?: Product }) {
             min={1}
             value={e.price}
             onChange={(ev) => set('price', ev.target.value)}
+          />
+        </Field>
+        <Field label="Harga Teknisi (Rp) *">
+          <input
+            className={`input ${err.priceTech ? 'err' : ''}`}
+            type="number"
+            min={1}
+            value={e.priceTech}
+            onChange={(ev) => set('priceTech', ev.target.value)}
           />
         </Field>
         <Field label={product ? 'Stok (penyesuaian manual)' : 'Stok Awal'}>

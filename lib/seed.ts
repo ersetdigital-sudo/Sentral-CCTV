@@ -1,4 +1,4 @@
-import { daysAgo, isoDate } from './format'
+import { addDays, daysAgo, isoDate } from './format'
 import { CATEGORIES, PAY_METHODS, type DB, type Job } from './types'
 
 /** Data demo fiktif — identik dengan seed() versi vanilla. */
@@ -13,37 +13,38 @@ export function seed(): DB {
     price: number,
     stock: number,
     min: number,
-  ) => ({ id, sku, name, cat, brand, cost, price, stock, min, unit: 'pcs' })
+    priceTech: number,
+  ) => ({ id, sku, name, cat, brand, cost, price, priceTech, stock, min, unit: 'pcs' })
 
   const products = [
-    P('p1', 'CAM-HK-D2MP', 'Hikvision 2MP Dome Camera', 'Kamera Analog', 'Hikvision', 185000, 265000, 34, 10),
-    P('p2', 'CAM-HK-B2MP', 'Hikvision 2MP Bullet Camera', 'Kamera Analog', 'Hikvision', 195000, 280000, 6, 10),
-    P('p3', 'CAM-DH-IP4', 'Dahua IP Camera 4MP', 'Kamera IP', 'Dahua', 520000, 725000, 15, 5),
-    P('p4', 'CAM-WF-3MP', 'Kamera CCTV WiFi 3MP', 'Kamera IP', 'Imou', 290000, 399000, 22, 8),
-    P('p5', 'DVR-HK-8CH', 'DVR 8 Channel Hikvision', 'DVR / XVR', 'Hikvision', 780000, 1050000, 9, 4),
-    P('p6', 'XVR-DH-4CH', 'XVR 4 Channel Dahua', 'DVR / XVR', 'Dahua', 520000, 695000, 3, 4),
-    P('p7', 'NVR-HK-8CH', 'NVR 8 Channel Hikvision', 'NVR', 'Hikvision', 950000, 1250000, 5, 3),
-    P('p8', 'HDD-WD-1TB', 'Hard Disk Surveillance 1TB', 'Hard Disk', 'WD Purple', 640000, 815000, 12, 5),
-    P('p9', 'HDD-SG-2TB', 'Hard Disk Surveillance 2TB', 'Hard Disk', 'Seagate SkyHawk', 920000, 1150000, 0, 3),
-    P('p10', 'KBL-RG59-100', 'Kabel CCTV RG59 + Power (100m)', 'Kabel dan Konektor', 'Belden', 285000, 375000, 18, 5),
-    P('p11', 'KBL-CAT6-305', 'Kabel LAN Cat6 (305m)', 'Kabel dan Konektor', 'AMP', 1150000, 1450000, 4, 2),
-    P('p12', 'KON-BNC', 'BNC Connector Drat', 'Kabel dan Konektor', 'Generic', 2500, 5000, 240, 100),
-    P('p13', 'KON-DC', 'Konektor DC Male/Female', 'Kabel dan Konektor', 'Generic', 2000, 4000, 60, 100),
-    P('p14', 'PSU-12V-10A', 'Power Supply CCTV 12V 10A', 'Power Supply', 'Generic', 115000, 165000, 14, 5),
-    P('p15', 'ADP-12V-2A', 'Adaptor CCTV 12V 2A', 'Power Supply', 'Generic', 28000, 45000, 7, 15),
-    P('p16', 'AKS-BRKT', 'Bracket Kamera Dinding', 'Aksesori CCTV', 'Generic', 12000, 25000, 45, 10),
-    P('p17', 'AKS-BOX', 'Junction Box Waterproof', 'Aksesori CCTV', 'Generic', 15000, 30000, 38, 10),
-    P('p18', 'ALT-CRIMP', 'Tang Crimping RJ45/BNC', 'Peralatan Instalasi', 'Krisbow', 85000, 135000, 6, 2),
+    P('p1', 'CAM-HK-D2MP', 'Hikvision 2MP Dome Camera', 'Kamera Analog', 'Hikvision', 185000, 265000, 34, 10, 245000),
+    P('p2', 'CAM-HK-B2MP', 'Hikvision 2MP Bullet Camera', 'Kamera Analog', 'Hikvision', 195000, 280000, 6, 10, 258000),
+    P('p3', 'CAM-DH-IP4', 'Dahua IP Camera 4MP', 'Kamera IP', 'Dahua', 520000, 725000, 15, 5, 670000),
+    P('p4', 'CAM-WF-3MP', 'Kamera CCTV WiFi 3MP', 'Kamera IP', 'Imou', 290000, 399000, 22, 8, 369000),
+    P('p5', 'DVR-HK-8CH', 'DVR 8 Channel Hikvision', 'DVR / XVR', 'Hikvision', 780000, 1050000, 9, 4, 970000),
+    P('p6', 'XVR-DH-4CH', 'XVR 4 Channel Dahua', 'DVR / XVR', 'Dahua', 520000, 695000, 3, 4, 640000),
+    P('p7', 'NVR-HK-8CH', 'NVR 8 Channel Hikvision', 'NVR', 'Hikvision', 950000, 1250000, 5, 3, 1150000),
+    P('p8', 'HDD-WD-1TB', 'Hard Disk Surveillance 1TB', 'Hard Disk', 'WD Purple', 640000, 815000, 12, 5, 750000),
+    P('p9', 'HDD-SG-2TB', 'Hard Disk Surveillance 2TB', 'Hard Disk', 'Seagate SkyHawk', 920000, 1150000, 0, 3, 1055000),
+    P('p10', 'KBL-RG59-100', 'Kabel CCTV RG59 + Power (100m)', 'Kabel dan Konektor', 'Belden', 285000, 375000, 18, 5, 345000),
+    P('p11', 'KBL-CAT6-305', 'Kabel LAN Cat6 (305m)', 'Kabel dan Konektor', 'AMP', 1150000, 1450000, 4, 2, 1330000),
+    P('p12', 'KON-BNC', 'BNC Connector Drat', 'Kabel dan Konektor', 'Generic', 2500, 5000, 240, 100, 4000),
+    P('p13', 'KON-DC', 'Konektor DC Male/Female', 'Kabel dan Konektor', 'Generic', 2000, 4000, 60, 100, 3200),
+    P('p14', 'PSU-12V-10A', 'Power Supply CCTV 12V 10A', 'Power Supply', 'Generic', 115000, 165000, 14, 5, 150000),
+    P('p15', 'ADP-12V-2A', 'Adaptor CCTV 12V 2A', 'Power Supply', 'Generic', 28000, 45000, 7, 15, 40000),
+    P('p16', 'AKS-BRKT', 'Bracket Kamera Dinding', 'Aksesori CCTV', 'Generic', 12000, 25000, 45, 10, 22000),
+    P('p17', 'AKS-BOX', 'Junction Box Waterproof', 'Aksesori CCTV', 'Generic', 15000, 30000, 38, 10, 26000),
+    P('p18', 'ALT-CRIMP', 'Tang Crimping RJ45/BNC', 'Peralatan Instalasi', 'Krisbow', 85000, 135000, 6, 2, 120000),
   ]
 
   const customers = [
-    { id: 'c0', name: 'Pelanggan Umum', phone: '-', address: '-' },
-    { id: 'c1', name: 'Budi Santoso', phone: '0812-3456-7890', address: 'Jl. Melati No. 12, Sleman, Yogyakarta' },
-    { id: 'c2', name: 'Toko Makmur Jaya', phone: '0813-2211-4455', address: 'Jl. Pasar Baru No. 45, Bantul, Yogyakarta' },
-    { id: 'c3', name: 'Siti Rahmawati', phone: '0857-1122-3344', address: 'Perum Griya Asri Blok C3, Depok Sleman' },
-    { id: 'c4', name: 'CV Sinar Abadi', phone: '0274-555-0192', address: 'Jl. Magelang Km 7, Sleman, Yogyakarta' },
-    { id: 'c5', name: 'Klinik Sehat Sentosa', phone: '0821-7788-9900', address: 'Jl. Kaliurang Km 9, Ngaglik, Sleman' },
-    { id: 'c6', name: 'Agus Firmansyah', phone: '0878-6655-4433', address: 'Jl. Wonosari Km 5, Banguntapan, Bantul' },
+    { id: 'c0', name: 'Pelanggan Umum', phone: '-', address: '-', priceType: 'Pelanggan' as const },
+    { id: 'c1', name: 'Budi Santoso', phone: '0812-3456-7890', address: 'Jl. Melati No. 12, Sleman, Yogyakarta', priceType: 'Pelanggan' as const },
+    { id: 'c2', name: 'Toko Makmur Jaya', phone: '0813-2211-4455', address: 'Jl. Pasar Baru No. 45, Bantul, Yogyakarta', priceType: 'Teknisi' as const, dueDays: 7 },
+    { id: 'c3', name: 'Siti Rahmawati', phone: '0857-1122-3344', address: 'Perum Griya Asri Blok C3, Depok Sleman', priceType: 'Pelanggan' as const },
+    { id: 'c4', name: 'CV Sinar Abadi', phone: '0274-555-0192', address: 'Jl. Magelang Km 7, Sleman, Yogyakarta', priceType: 'Teknisi' as const, dueDays: 30 },
+    { id: 'c5', name: 'Klinik Sehat Sentosa', phone: '0821-7788-9900', address: 'Jl. Kaliurang Km 9, Ngaglik, Sleman', priceType: 'Pelanggan' as const },
+    { id: 'c6', name: 'Agus Firmansyah', phone: '0878-6655-4433', address: 'Jl. Wonosari Km 5, Banguntapan, Bantul', priceType: 'Pelanggan' as const },
   ]
 
   const suppliers = [
@@ -162,25 +163,39 @@ export function seed(): DB {
     [['p11', 1]],
   ]
   const cust = ['c0', 'c1', 'c2', 'c0', 'c3', 'c4', 'c0', 'c6']
+  const DUE = 14
   for (let d = 6; d >= 0; d--) {
     const cnt = [3, 4, 2, 5, 3, 4, 3][6 - d]
     for (let k = 0; k < cnt; k++) {
       const p = pat[(d * 3 + k) % pat.length]
+      const custId = cust[(d + k) % cust.length]
+      const priceType = customers.find((c) => c.id === custId)?.priceType ?? 'Pelanggan'
       const items = p.map(([pid, qty]) => {
         const pr = products.find((x) => x.id === pid)!
-        return { pid, name: pr.name, sku: pr.sku, qty, price: pr.price, cost: pr.cost }
+        return {
+          pid,
+          name: pr.name,
+          sku: pr.sku,
+          qty,
+          price: priceType === 'Teknisi' ? pr.priceTech : pr.price,
+          cost: pr.cost,
+        }
       })
       const subtotal = items.reduce((a, i) => a + i.qty * i.price, 0)
       const discount = k === 1 ? 10000 : 0
       const total = subtotal - discount
       const method = PAY_METHODS[(d + k) % 4]
       const unpaid = d === 1 && k === 0
+      const date = daysAgo(d, 9 + k * 2, 15 * k)
       sales.push({
         id: 's' + n,
         inv: 'INV-' + isoDate(daysAgo(d)).replace(/-/g, '') + '-' + String(n).padStart(3, '0'),
-        date: daysAgo(d, 9 + k * 2, 15 * k),
-        custId: cust[(d + k) % cust.length],
+        date,
+        dueDate: addDays(date, DUE),
+        dueDays: DUE,
+        custId,
         cashier: 'Rina Aprilia',
+        priceType,
         items,
         subtotal,
         discount,
@@ -194,6 +209,67 @@ export function seed(): DB {
       n++
     }
   }
+
+  // Piutang lama (biar laporan umur piutang ada isinya).
+  const oldSale = (
+    id: string,
+    days: number,
+    custId: string,
+    lines: [string, number][],
+    paidRatio: number,
+    tempo: number,
+  ) => {
+    const priceType = customers.find((c) => c.id === custId)?.priceType ?? 'Pelanggan'
+    const items = lines.map(([pid, qty]) => {
+      const pr = products.find((x) => x.id === pid)!
+      return {
+        pid,
+        name: pr.name,
+        sku: pr.sku,
+        qty,
+        price: priceType === 'Teknisi' ? pr.priceTech : pr.price,
+        cost: pr.cost,
+      }
+    })
+    const subtotal = items.reduce((a, i) => a + i.qty * i.price, 0)
+    const total = subtotal
+    const date = daysAgo(days, 10)
+    const paid = Math.round(total * paidRatio)
+    sales.push({
+      id,
+      inv: 'INV-' + isoDate(daysAgo(days)).replace(/-/g, '') + '-' + String(n).padStart(3, '0'),
+      date,
+      dueDate: addDays(date, tempo),
+      dueDays: tempo,
+      custId,
+      cashier: 'Rina Aprilia',
+      priceType,
+      items,
+      subtotal,
+      discount: 0,
+      tax: 0,
+      total,
+      method: paidRatio > 0 ? 'Transfer Bank' : 'Tunai',
+      paid,
+      change: 0,
+      status: paid >= total ? 'Lunas' : 'Belum Lunas',
+    })
+    n++
+  }
+
+  oldSale('s900', 45, 'c4', [
+    ['p3', 2],
+    ['p7', 1],
+    ['p10', 1],
+  ], 0.4, 7)
+  oldSale('s901', 78, 'c2', [
+    ['p1', 4],
+    ['p5', 1],
+  ], 0, 30)
+  oldSale('s902', 104, 'c5', [
+    ['p4', 6],
+    ['p8', 1],
+  ], 0.25, 14)
 
   const J = (
     id: string,
@@ -374,6 +450,7 @@ export function seed(): DB {
     defaultMin: 5,
     cashier: 'Rina Aprilia',
     paper: '80',
+    dueDays: DUE,
     footer: 'Terima kasih telah berbelanja. Garansi sesuai ketentuan toko.',
   }
 

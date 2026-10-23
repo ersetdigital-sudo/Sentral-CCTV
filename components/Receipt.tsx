@@ -7,7 +7,7 @@ import { usePrint } from './PrintArea'
 import { useToast } from './Toast'
 import { useStore } from '@/lib/store'
 import { receiptPaper, useReceiptPaper } from '@/lib/receiptPaper'
-import { fDateTime, rp } from '@/lib/format'
+import { fDate, fDateTime, rp, tempoLabel } from '@/lib/format'
 import type { Sale } from '@/lib/types'
 
 type ReceiptCtx = {
@@ -55,6 +55,12 @@ export function Receipt({ sale, paper }: { sale: Sale; paper: string }) {
         <span>Pelanggan</span>
         <span>{cu?.name}</span>
       </div>
+      {sale.priceType === 'Teknisi' ? (
+        <div className="rw">
+          <span>Harga</span>
+          <span>Teknisi</span>
+        </div>
+      ) : null}
       <hr />
       {sale.items.map((i) => (
         <Fragment key={i.pid}>
@@ -92,11 +98,25 @@ export function Receipt({ sale, paper }: { sale: Sale; paper: string }) {
         <span>{sale.method}</span>
         <span>{rp(sale.paid)}</span>
       </div>
-      {sale.method === 'Tunai' ? (
+      {sale.method === 'Tunai' && sale.status === 'Lunas' ? (
         <div className="rw">
           <span>Kembali</span>
           <span>{rp(sale.change)}</span>
         </div>
+      ) : null}
+      {sale.total - sale.paid > 0 ? (
+        <>
+          <div className="rw">
+            <span>Sisa</span>
+            <span>{rp(sale.total - sale.paid)}</span>
+          </div>
+          <div className="rw">
+            <span>Jatuh Tempo</span>
+            <span>
+              {sale.dueDate ? fDate(sale.dueDate) : '-'} ({tempoLabel(sale.dueDays)})
+            </span>
+          </div>
+        </>
       ) : null}
       <div className="rw">
         <span>Status</span>

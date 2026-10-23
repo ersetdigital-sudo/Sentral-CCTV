@@ -54,7 +54,7 @@ scripts/serve-legacy.cjs  server statis untuk membuka legacy/ di browser
 ## Halaman (route)
 
 `/dashboard` · `/kasir` · `/transaksi` · `/inventory` · `/kategori` · `/supplier` · `/pembelian` ·
-`/instalasi` · `/pelanggan` · `/laporan` · `/pengaturan`
+`/instalasi` · `/pelanggan` · `/piutang` · `/laporan` · `/pengaturan`
 
 ## Yang perlu diisi manual
 
@@ -77,6 +77,39 @@ Semua data masih **data demo fiktif** (sama seperti HTML asli):
   struktur DOM, class, dan nilai computed style per elemen.
 - CSS aplikasi sengaja **tidak** dibungkus `@layer` (sama seperti file asli), supaya utility
   class Tailwind tidak menimpa class kustom seperti `grid` / `block`.
+
+## Penambahan (v9) — harga teknisi, tempo per transaksi & laporan piutang
+
+**Dua harga per produk**
+- Setiap produk punya **Harga Pelanggan** (retail) dan **Harga Teknisi** (rekanan/reseller).
+  Kolom baru `priceTech`, wajib `>= modal` dan `<= harga pelanggan` (divalidasi di form produk).
+- Kasir punya saklar **Harga: Pelanggan / Teknisi**. Harga keranjang ikut berubah real-time,
+  dan kartu produk menampilkan harga pasangannya ("Teknisi Rp245.000").
+- Pelanggan punya **tipe harga default** (Pelanggan/Teknisi). Memilih pelanggan di Kasir otomatis
+  mengganti tipe harga, dan tipe harga yang dipakai dicatat di transaksi (`Sale.priceType`)
+  serta tercetak di struk ("Harga: Teknisi").
+- Tabel produk menampilkan dua harga sekaligus; detail produk memakai dua kartu harga
+  (pelanggan ungu, teknisi navy) plus margin masing-masing.
+
+**Tempo / jatuh tempo per transaksi**
+- Kasir: pilihan **Bayar Lunas** atau **Tempo / Bon**. Mode tempo memunculkan pilihan
+  **1 minggu / 2 minggu / 1 bulan**, input **Uang Muka (DP)**, tanggal jatuh tempo, dan sisa piutang.
+- Transaksi tempo tersimpan sebagai `Belum Lunas` dengan `dueDays` + `dueDate` sendiri,
+  jadi satu nota bisa 7 hari, nota lain 30 hari.
+- Pelanggan bisa punya **tempo default** (7/14/30 hari) yang otomatis terpilih saat memilih
+  pelanggan di Kasir. Default toko diatur di **Pengaturan → Tempo Piutang Default**.
+- Struk transaksi tempo mencetak **Sisa** dan **Jatuh Tempo**.
+- Data lama di localStorage dimigrasi otomatis (tanpa ganti key): `priceTech` diisi ±92% harga jual,
+  `priceType`/`dueDate`/`dueDays` di-backfill dari data yang ada.
+
+**Laporan Piutang (`/piutang`)**
+- Menggabungkan **nota penjualan** dan **jasa instalasi** yang belum lunas.
+- KPI: total piutang, lewat jatuh tempo, belum jatuh tempo, jumlah pelanggan menunggak.
+- **Umur piutang** 0–30 / 31–60 / 61–90 / >90 hari (dari tanggal nota) + **prioritas penagihan**.
+- Tabel per pelanggan (total, lewat tempo, umur tertua, status) dengan filter dan pencarian.
+- Detail drawer **navy**: daftar nota + status tempo, tombol **Lunasi** per nota,
+  **Lunasi Semua**, dan **Ingatkan via WA** (pesan tagihan otomatis via `wa.me`).
+- Ekspor CSV piutang + tautan cepat dari halaman Laporan.
 
 ## Penambahan (v8) — semua detail jadi drawer berwarna
 

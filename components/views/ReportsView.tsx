@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { Icon } from '@/components/Icon'
 import { BarChart } from '@/components/charts'
 import { DataTable, Note, PageHead, type Cell } from '@/components/ui'
@@ -207,6 +208,9 @@ export default function ReportsView() {
         <div className="card">
           <div className="card-h">
             <h3>Tagihan Pelanggan Belum Lunas</h3>
+            <Link className="btn sm" href="/piutang">
+              Laporan Piutang
+            </Link>
           </div>
           <div className="card-b" style={{ paddingTop: 4 }}>
             {unpaid.length ? (

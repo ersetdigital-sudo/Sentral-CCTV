@@ -2769,3 +2769,240 @@ table.tbl {
     background: var(--light);
   }
 }
+
+/* ===== v9: harga teknisi + laporan piutang ===== */
+
+/* --- Kasir: pilihan tipe harga --- */
+.price-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--light);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.price-switch .ps-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0 8px 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.price-switch button {
+  border: none;
+  background: none;
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: 0.15s;
+}
+.price-switch button:hover {
+  color: var(--navy);
+}
+.price-switch button.active {
+  background: #fff;
+  color: var(--primary);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12), 0 6px 14px -10px rgba(37, 99, 235, 0.5);
+}
+
+/* Harga sekunder di kartu produk kasir */
+.pcard .pr-alt {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 1px;
+  margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Detail produk: dua harga berdampingan --- */
+.price-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.price-cell {
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  box-shadow: 0 12px 28px -20px #6d28d9;
+}
+.price-cell.tech {
+  background: linear-gradient(135deg, #0f172a, #334155);
+  box-shadow: 0 12px 28px -20px #0f172a;
+}
+.price-cell small {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 600;
+}
+.price-cell b {
+  display: block;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  margin: 3px 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+.price-cell span {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* --- KPI tambahan --- */
+.kpi-ic.r {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  color: var(--danger);
+}
+.kpi-ic.g {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  color: var(--success);
+}
+
+/* --- Umur piutang --- */
+.aging {
+  display: grid;
+  gap: 14px;
+}
+.aging-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  margin-bottom: 6px;
+}
+.aging-top span {
+  color: var(--muted);
+  font-weight: 600;
+}
+.aging-top b {
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+.aging-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--light);
+  overflow: hidden;
+}
+.aging-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #60a5fa, #2563eb);
+  transition: width 0.5s ease;
+}
+.aging-row:nth-child(2) .aging-bar i {
+  background: linear-gradient(90deg, #fbbf24, #d97706);
+}
+.aging-row:nth-child(3) .aging-bar i {
+  background: linear-gradient(90deg, #fb923c, #ea580c);
+}
+.aging-row:nth-child(4) .aging-bar i {
+  background: linear-gradient(90deg, #f87171, #dc2626);
+}
+.aging-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+/* Baris nota di drawer piutang */
+.ar-row {
+  align-items: flex-start;
+  gap: 10px;
+}
+.ar-row .btn.sm {
+  min-height: 30px;
+}
+
+@media (max-width: 640px) {
+  .price-switch {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .price-switch button {
+    flex: 1;
+    padding: 8px 6px;
+  }
+  .price-pair {
+    grid-template-columns: 1fr;
+  }
+  .ar-row {
+    flex-wrap: wrap;
+  }
+  .ar-row > span:last-child {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .ar-row > span:last-child .badge {
+    margin-top: 0;
+  }
+  .ar-row > span:last-child .btn {
+    margin-top: 0;
+  }
+}
+
+/* --- Kasir: pilih Lunas / Tempo --- */
+.tempo-sel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.tempo-sel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: 0.15s;
+}
+.tempo-sel button svg {
+  width: 15px;
+  height: 15px;
+}
+.tempo-sel button.active {
+  border-color: var(--primary);
+  background: var(--light);
+  color: var(--primary);
+}
+.tempo-chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.tempo-chips button {
+  border: 1px dashed var(--border);
+  background: #fff;
+  border-radius: 9px;
+  padding: 7px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: 0.15s;
+}
+.tempo-chips button.active {
+  border-style: solid;
+  border-color: #d97706;
+  background: #fffbeb;
+  color: #b45309;
+}

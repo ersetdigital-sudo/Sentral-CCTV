@@ -104,6 +104,7 @@ async function main() {
     if (process.argv[7] && process.argv[7].startsWith('@')) {
       const pre = fs.readFileSync(process.argv[7].slice(1), 'utf8')
       await send('Runtime.evaluate', { expression: pre, returnByValue: true, awaitPromise: true })
+      await sleep(1800)
     }
     const shot = await send('Page.captureScreenshot', {
       format: 'png',

@@ -8,7 +8,7 @@ import { useToast } from '@/components/Toast'
 import { DrawerFoot, useDrawer } from '@/components/Drawer'
 import { useReceipt } from '@/components/Receipt'
 import { useStore } from '@/lib/store'
-import { fDateTime, isoDate, rp } from '@/lib/format'
+import { fDate, fDateTime, isoDate, rp, tempoLabel } from '@/lib/format'
 import { PAY_METHODS, type Sale } from '@/lib/types'
 
 export default function SalesView() {
@@ -56,11 +56,25 @@ export default function SalesView() {
   const rows: Cell[][] = list.map((s) => [
     { label: 'Invoice', value: <span className="mono b">{s.inv}</span> },
     { label: 'Tanggal', value: fDateTime(s.date) },
-    { label: 'Pelanggan', value: db.customers.find((c) => c.id === s.custId)?.name ?? '-' },
+    { label: 'Pelanggan', value: (
+      <>
+        {db.customers.find((c) => c.id === s.custId)?.name ?? '-'}
+        {s.priceType === 'Teknisi' ? (
+          <div className="small muted">Harga teknisi</div>
+        ) : null}
+      </>
+    ) },
     { label: 'Kasir', value: s.cashier },
     { label: 'Total', value: <b>{rp(s.total)}</b>, align: 'r' },
     { label: 'Metode', value: s.method },
-    { label: 'Status', value: <PayBadge status={s.status} /> },
+    { label: 'Status', value: (
+      <>
+        <PayBadge status={s.status} />
+        {s.status === 'Belum Lunas' && s.dueDays ? (
+          <div className="small muted">Tempo {tempoLabel(s.dueDays)}</div>
+        ) : null}
+      </>
+    ) },
     {
       label: 'Aksi',
       value: (
@@ -172,6 +186,17 @@ function SaleDetail({ sale }: { sale: Sale }) {
           <div className="dw-cell">
             <small>Metode Bayar</small>
             <b>{s.method}</b>
+          </div>
+          <div className="dw-cell">
+            <small>Jenis Harga</small>
+            <b>{s.priceType ?? 'Pelanggan'}</b>
+          </div>
+          <div className="dw-cell">
+            <small>Jatuh Tempo</small>
+            <b>{s.dueDate ? fDate(s.dueDate) : '-'}</b>
+            <div className="small muted">
+              {s.status === 'Belum Lunas' ? `Tempo ${tempoLabel(s.dueDays)}` : 'Lunas saat transaksi'}
+            </div>
           </div>
         </div>
       </section>
