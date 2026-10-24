@@ -188,3 +188,10 @@ export function adjustStock(db: DB, pid: string, qty: number, type: string, ref:
   db.stockLog.push({ date: new Date().toISOString(), pid, type, qty: Math.abs(qty), ref })
   return db
 }
+
+/** Hapus transaksi penjualan + kembalikan stok barangnya ke gudang. */
+export function removeSale(db: DB, sale: Sale): DB {
+  db.sales = db.sales.filter((s) => s.id !== sale.id)
+  sale.items.forEach((i) => adjustStock(db, i.pid, i.qty, 'Masuk', sale.inv))
+  return db
+}

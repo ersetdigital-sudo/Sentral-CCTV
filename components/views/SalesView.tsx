@@ -6,15 +6,18 @@ import { Icon } from '@/components/Icon'
 import { DataTable, PageHead, PayBadge, SearchBox, type Cell } from '@/components/ui'
 import { useToast } from '@/components/Toast'
 import { DrawerFoot, useDrawer } from '@/components/Drawer'
+import { useModal } from '@/components/Modal'
 import { useReceipt } from '@/components/Receipt'
 import { useStore } from '@/lib/store'
 import { fDate, fDateTime, isoDate, rp, tempoLabel } from '@/lib/format'
+import { removeSale } from '@/lib/selectors'
 import { PAY_METHODS, type Sale } from '@/lib/types'
 
 export default function SalesView() {
   const { db, ready, update } = useStore()
   const toast = useToast()
-  const { open: openDrawer } = useDrawer()
+  const { open: openDrawer, close: closeDrawer } = useDrawer()
+  const { confirm } = useModal()
   const { openReceipt } = useReceipt()
   const router = useRouter()
 
@@ -42,6 +45,20 @@ export default function SalesView() {
 
   if (!ready) return null
 
+  const deleteSale = (s: Sale, after?: () => void) => {
+    confirm(
+      <>
+        Hapus transaksi <b>{s.inv}</b>? Stok produk pada transaksi ini akan dikembalikan dan tindakan ini
+        tidak dapat dibatalkan.
+      </>,
+      () => {
+        update((d) => removeSale(d, s))
+        toast('Transaksi dihapus')
+        after?.()
+      },
+    )
+  }
+
   const detail = (saleId: string) => {
     const s = db.sales.find((x) => x.id === saleId)
     if (!s) return
@@ -49,7 +66,7 @@ export default function SalesView() {
       title: `Transaksi ${s.inv}`,
       subtitle: `${fDateTime(s.date)} · Kasir ${s.cashier}`,
       accent: 'blue',
-      body: <SaleDetail sale={s} />,
+      body: <SaleDetail sale={s} onDelete={() => deleteSale(s, closeDrawer)} />,
     })
   }
 
@@ -84,6 +101,9 @@ export default function SalesView() {
           </button>
           <button className="icon-btn" title="Cetak struk" onClick={() => openReceipt(s)}>
             <Icon name="printer" />
+          </button>
+          <button className="icon-btn del" title="Hapus" onClick={() => deleteSale(s)}>
+            <Icon name="trash" />
           </button>
         </div>
       ),
@@ -145,7 +165,7 @@ export default function SalesView() {
 }
 
 /* ---------- Drawer detail transaksi ---------- */
-function SaleDetail({ sale }: { sale: Sale }) {
+function SaleDetail({ sale, onDelete }: { sale: Sale; onDelete: () => void }) {
   const { db, update } = useStore()
   const { close } = useDrawer()
   const { openReceipt } = useReceipt()
@@ -265,6 +285,9 @@ function SaleDetail({ sale }: { sale: Sale }) {
       </section>
 
       <DrawerFoot>
+        <button className="btn danger" style={{ marginRight: 'auto' }} onClick={onDelete}>
+          <Icon name="trash" /> Hapus
+        </button>
         {unpaid > 0 ? (
           <button
             className="btn success"

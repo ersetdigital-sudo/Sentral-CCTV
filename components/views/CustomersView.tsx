@@ -9,8 +9,8 @@ import { DrawerFoot, useDrawer } from '@/components/Drawer'
 import { useToast } from '@/components/Toast'
 import { useStore } from '@/lib/store'
 import { fDate, num, rp, tempoLabel, uid } from '@/lib/format'
-import { custDebt, custJobs, custSales, jobTotal } from '@/lib/selectors'
-import type { Customer } from '@/lib/types'
+import { custDebt, custJobs, custSales, jobTotal, removeSale } from '@/lib/selectors'
+import type { Customer, Sale } from '@/lib/types'
 
 export default function CustomersView() {
   const { db, ready, update, setPosCustomer } = useStore()
@@ -125,9 +125,10 @@ export default function CustomersView() {
 
 /* ---------- Drawer detail pelanggan ---------- */
 function CustomerDetail({ customer }: { customer: Customer }) {
-  const { db } = useStore()
+  const { db, update, setPosCustomer } = useStore()
   const { close } = useDrawer()
-  const { setPosCustomer } = useStore()
+  const { confirm } = useModal()
+  const toast = useToast()
   const router = useRouter()
   const sales = custSales(db, customer.id)
   const jobs = custJobs(db, customer.id)
@@ -135,6 +136,19 @@ function CustomerDetail({ customer }: { customer: Customer }) {
   const total =
     sales.reduce((a, x) => a + x.total, 0) +
     jobs.filter((x) => x.status !== 'Dibatalkan').reduce((a, x) => a + jobTotal(db, x), 0)
+
+  const deleteSale = (s: Sale) => {
+    confirm(
+      <>
+        Hapus transaksi <b>{s.inv}</b>? Stok produk pada transaksi ini akan dikembalikan dan tindakan ini
+        tidak dapat dibatalkan.
+      </>,
+      () => {
+        update((d) => removeSale(d, s))
+        toast('Transaksi dihapus')
+      },
+    )
+  }
 
   return (
     <>
@@ -194,11 +208,16 @@ function CustomerDetail({ customer }: { customer: Customer }) {
                     {fDate(s.date)} · {s.items.length} item
                   </div>
                 </span>
-                <span style={{ textAlign: 'right' }}>
-                  <b>{rp(s.total)}</b>
-                  <div style={{ marginTop: 3 }}>
-                    <PayBadge status={s.status} />
-                  </div>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'right' }}>
+                  <span>
+                    <b>{rp(s.total)}</b>
+                    <div style={{ marginTop: 3 }}>
+                      <PayBadge status={s.status} />
+                    </div>
+                  </span>
+                  <button className="icon-btn del" title="Hapus transaksi" onClick={() => deleteSale(s)}>
+                    <Icon name="trash" />
+                  </button>
                 </span>
               </div>
             ))
