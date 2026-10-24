@@ -8,13 +8,13 @@ import { DrawerFoot, useDrawer } from '@/components/Drawer'
 import { useToast } from '@/components/Toast'
 import { useStore } from '@/lib/store'
 import { fDate, rp, uid } from '@/lib/format'
-import { purTotal, supTotal } from '@/lib/selectors'
+import { purTotal, removePurchase, supTotal } from '@/lib/selectors'
 import type { Supplier } from '@/lib/types'
 
 export default function SuppliersView() {
   const { db, ready, update } = useStore()
-  const { open } = useModal()
-  const { open: openDrawer } = useDrawer()
+  const { open, confirm } = useModal()
+  const { open: openDrawer, close: closeDrawer } = useDrawer()
   const toast = useToast()
   const [q, setQ] = useState('')
 
@@ -30,7 +30,7 @@ export default function SuppliersView() {
       title: s.name,
       subtitle: `${s.contact} · ${s.phone}`,
       accent: 'teal',
-      body: <SupplierDetail supplier={s} />,
+      body: <SupplierDetail supplier={s} onDelete={() => deleteSupplier(s, closeDrawer)} />,
     })
   }
 
@@ -39,6 +39,47 @@ export default function SuppliersView() {
       title: s ? 'Edit Supplier' : 'Tambah Supplier',
       body: <SupplierForm supplier={s} />,
     })
+  }
+
+  const deleteSupplier = (s: Supplier, after?: () => void) => {
+    const pos = db.purchases.filter((p) => p.supplierId === s.id)
+
+    const doDelete = () => {
+      update((d) => {
+        // Riwayat pembelian ikut dihapus; stok barang yang sudah diterima dikurangi lagi.
+        pos.forEach((p) => removePurchase(d, p))
+        d.suppliers = d.suppliers.filter((x) => x.id !== s.id)
+      })
+      toast(pos.length ? `Supplier dan ${pos.length} pembelian dihapus` : 'Supplier dihapus')
+      after?.()
+    }
+
+    if (!pos.length) {
+      confirm(
+        <>
+          Hapus supplier <b>{s.name}</b>? Tindakan ini tidak dapat dibatalkan.
+        </>,
+        doDelete,
+      )
+      return
+    }
+
+    confirm(
+      <>
+        Supplier <b>{s.name}</b> masih punya <b>{pos.length} pembelian</b>. Hapus supplier beserta seluruh riwayat
+        pembeliannya?
+      </>,
+      () =>
+        confirm(
+          <>
+            Yakin? {pos.length} pembelian ikut terhapus dan stok barang yang sudah diterima akan dikurangi kembali.
+            Tindakan ini tidak dapat dibatalkan.
+          </>,
+          doDelete,
+          'Hapus Semua',
+        ),
+      'Lanjut',
+    )
   }
 
   const rows: Cell[][] = list.map((s) => [
@@ -57,6 +98,9 @@ export default function SuppliersView() {
           </button>
           <button className="icon-btn" title="Edit" onClick={() => openSupplierForm(s)}>
             <Icon name="edit" />
+          </button>
+          <button className="icon-btn del" title="Hapus" onClick={() => deleteSupplier(s)}>
+            <Icon name="trash" />
           </button>
         </div>
       ),
@@ -97,7 +141,7 @@ export default function SuppliersView() {
 }
 
 /* ---------- Drawer detail supplier ---------- */
-function SupplierDetail({ supplier }: { supplier: Supplier }) {
+function SupplierDetail({ supplier, onDelete }: { supplier: Supplier; onDelete: () => void }) {
   const { db } = useStore()
   const { close } = useDrawer()
   const ps = db.purchases.filter((p) => p.supplierId === supplier.id)
@@ -158,6 +202,9 @@ function SupplierDetail({ supplier }: { supplier: Supplier }) {
       </section>
 
       <DrawerFoot>
+        <button className="btn danger" style={{ marginRight: 'auto' }} onClick={onDelete}>
+          <Icon name="trash" /> Hapus
+        </button>
         <button className="btn" onClick={close}>
           Tutup
         </button>

@@ -8,13 +8,13 @@ import { DrawerFoot, useDrawer } from '@/components/Drawer'
 import { useToast } from '@/components/Toast'
 import { useStore } from '@/lib/store'
 import { fDate, isoDate, num, rp, uid } from '@/lib/format'
-import { adjustStock, purTotal } from '@/lib/selectors'
+import { adjustStock, purTotal, removePurchase } from '@/lib/selectors'
 import type { Purchase } from '@/lib/types'
 
 export default function PurchasesView() {
   const { db, ready, update } = useStore()
   const { open, confirm, close } = useModal()
-  const { open: openDrawer } = useDrawer()
+  const { open: openDrawer, close: closeDrawer } = useDrawer()
   const toast = useToast()
   const [q, setQ] = useState('')
   const [st, setSt] = useState('')
@@ -54,12 +54,27 @@ export default function PurchasesView() {
     )
   }
 
+  const deletePurchase = (p: Purchase, after?: () => void) => {
+    confirm(
+      <>
+        Hapus pembelian <b>{p.no}</b>?{' '}
+        {p.received ? 'Stok barang yang sudah diterima akan dikurangi kembali. ' : ''}
+        Tindakan ini tidak dapat dibatalkan.
+      </>,
+      () => {
+        update((d) => removePurchase(d, p))
+        toast('Pembelian dihapus')
+        after?.()
+      },
+    )
+  }
+
   const purchaseDetail = (p: Purchase) => {
     openDrawer({
       title: `Pembelian ${p.no}`,
       subtitle: fDate(p.date),
       accent: 'orange',
-      body: <PurchaseDetail purchase={p} />,
+      body: <PurchaseDetail purchase={p} onDelete={() => deletePurchase(p, closeDrawer)} />,
     })
   }
 
@@ -97,6 +112,9 @@ export default function PurchasesView() {
               <Icon name="check" /> Diterima
             </button>
           ) : null}
+          <button className="icon-btn del" title="Hapus" onClick={() => deletePurchase(p)}>
+            <Icon name="trash" />
+          </button>
         </div>
       ),
     },
@@ -143,7 +161,7 @@ export default function PurchasesView() {
 }
 
 /* ---------- Drawer detail pembelian ---------- */
-function PurchaseDetail({ purchase }: { purchase: Purchase }) {
+function PurchaseDetail({ purchase, onDelete }: { purchase: Purchase; onDelete: () => void }) {
   const { db, update } = useStore()
   const { close } = useDrawer()
   const { confirm } = useModal()
@@ -241,6 +259,9 @@ function PurchaseDetail({ purchase }: { purchase: Purchase }) {
       </section>
 
       <DrawerFoot>
+        <button className="btn danger" style={{ marginRight: 'auto' }} onClick={onDelete}>
+          <Icon name="trash" /> Hapus
+        </button>
         {p.pay !== 'Lunas' ? (
           <button
             className="btn"
