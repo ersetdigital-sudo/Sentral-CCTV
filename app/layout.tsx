@@ -2,7 +2,11 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { inter } from '@/lib/fonts'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+// Prioritas: env eksplisit → domain produksi Vercel → URL deployment → lokal.
+const vercelUrl =
+  process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL ?? ''
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? (vercelUrl ? `https://${vercelUrl}` : 'http://localhost:3000')
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

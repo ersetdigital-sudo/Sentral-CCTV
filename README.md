@@ -83,8 +83,24 @@ checklist *Auto Confirm User*). Role admin dibaca dari `public.profiles.role`.
 > Catatan: penulisan per koleksi berarti *last writer wins* bila dua admin mengubah data yang
 > sama bersamaan — cukup untuk satu toko dengan sedikit admin.
 
-Variabel lingkungan opsional: `NEXT_PUBLIC_SITE_URL` (default `http://localhost:3000`) untuk
-metadata/OG.
+Variabel lingkungan opsional: `NEXT_PUBLIC_SITE_URL` untuk metadata/OG. Kalau tidak diisi,
+build di Vercel otomatis memakai `VERCEL_PROJECT_PRODUCTION_URL`/`VERCEL_URL`, dan di lokal
+jatuh ke `http://localhost:3000`.
+
+### 6. Deploy ke Vercel
+
+Hanya butuh **dua** environment variable (set untuk Production, Preview, dan Development):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon / publishable key>
+```
+
+File import siap pakai ada di `.env.vercel.local` (git-ignored, dibuat dari `.env.local`).
+Buka Vercel → Project → Settings → Environment Variables → **Import .env**, pilih file itu.
+`SUPABASE_ACCESS_TOKEN` dan `SUPABASE_SERVICE_ROLE_KEY` **tidak perlu** di Vercel — keduanya
+hanya dipakai skrip lokal (`db:push`/`db:seed`). Setelah env ditambahkan/changed, redeploy
+supaya nilai `NEXT_PUBLIC_*` ikut ter-inline ke bundle.
 
 ## Struktur
 
