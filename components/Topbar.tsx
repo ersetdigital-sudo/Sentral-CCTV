@@ -5,9 +5,10 @@ import { useEffect, useRef } from 'react'
 import { Icon } from './Icon'
 import { routeByPath } from '@/lib/nav'
 import { useStore } from '@/lib/store'
+import { signOut } from '@/lib/auth-actions'
 import { useToast } from './Toast'
 
-export function Topbar() {
+export function Topbar({ fullName, email }: { fullName: string; email: string }) {
   const pathname = usePathname()
   const router = useRouter()
   const { db, setInventoryFilter } = useStore()
@@ -27,7 +28,7 @@ export function Topbar() {
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
-  const initials = db.settings.cashier
+  const initials = fullName
     .split(' ')
     .map((w) => w[0])
     .join('')
@@ -82,9 +83,15 @@ export function Topbar() {
         <div className="user-meta">
           <small>Selamat datang,</small>
           <br />
-          <b className="small">{db.settings.cashier}</b>
+          <b className="small">{fullName}</b>
         </div>
       </div>
+
+      <form action={signOut} title={email || 'Keluar'}>
+        <button className="icon-btn" type="submit" aria-label="Keluar" title="Keluar">
+          <Icon name="logout" />
+        </button>
+      </form>
     </header>
   )
 }

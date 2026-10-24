@@ -1,12 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { inter } from '@/lib/fonts'
-import { StoreProvider } from '@/lib/store'
-import { ToastProvider } from '@/components/Toast'
-import { ModalProvider } from '@/components/Modal'
-import { PrintProvider } from '@/components/PrintArea'
-import { ReceiptProvider } from '@/components/Receipt'
-import { DrawerProvider } from '@/components/Drawer'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
@@ -74,17 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id" className={inter.variable}>
       <body>
-        <StoreProvider>
-          <ToastProvider>
-            <PrintProvider>
-              <ModalProvider>
-                <ReceiptProvider>
-                  <DrawerProvider>{children}</DrawerProvider>
-                </ReceiptProvider>
-              </ModalProvider>
-            </PrintProvider>
-          </ToastProvider>
-        </StoreProvider>
+        {children}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

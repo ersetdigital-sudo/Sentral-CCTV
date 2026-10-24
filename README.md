@@ -24,17 +24,77 @@ npm run build && npm start
 npm run typecheck
 ```
 
+## Supabase & login admin
+
+Seluruh data toko sekarang disimpan di **Supabase** (Postgres) dan aplikasi hanya bisa dibuka
+oleh admin yang login. Data demo **tidak lagi** memakai localStorage.
+
+### 1. Variabel lingkungan
+
+Isi `.env.local` (lihat `.env.example`):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon / publishable key>
+```
+
+Kunci `anon` aman dipakai di browser karena akses data dibatasi RLS (hanya admin).
+Service role key **tidak** dipakai aplikasi — hanya oleh `npm run db:seed`.
+
+### 2. Skema database
+
+```bash
+SUPABASE_ACCESS_TOKEN=sbp_xxx npm run db:push   # jalankan scripts/supabase-schema.sql
+```
+
+Butuh personal access token dari Supabase (Account → Access Tokens). Skrip memakai Management
+API, jadi tidak perlu `psql`. Skema bersifat idempotent (aman dijalankan ulang).
+
+Yang dibuat: `profiles` (admin/staff), `products`, `customers`, `suppliers`, `purchases`, `sales`,
+`jobs`, `stock_log`, `settings`, `counters` — semuanya RLS aktif dengan policy
+`public.is_admin()`. Sign-up publik dimatikan, user baru hanya lahir dari dashboard/Admin API dan
+otomatis dapat baris `profiles` lewat trigger `handle_new_user`.
+
+### 3. Data demo (opsional)
+
+```bash
+SUPABASE_SERVICE_ROLE_KEY=<service_role key> npm run db:seed
+```
+
+Skrip ini **mengganti seluruh isi tabel** dengan data dari `lib/seed.ts`. Secret key bisa
+ditaruh sementara di `.env.local` (sudah di-ignore git) atau di-set di shell.
+
+### 4. Akun admin
+
+Halaman login: `/login`. Akun admin dibuat lewat Supabase (Dashboard → Authentication → Users,
+checklist *Auto Confirm User*). Role admin dibaca dari `public.profiles.role`.
+
+### 5. Cara kerja penyimpanan
+
+- `app/(app)/layout.tsx` memverifikasi sesi + role admin sebelum merender shell aplikasi.
+- `proxy.ts` (pengganti `middleware.ts` di Next.js 16) me-refresh sesi dan mengalihkan request
+  tanpa login ke `/login?next=...`.
+- `lib/store.tsx` memuat seluruh data sekali dari Supabase, lalu setiap `update()` menghitung
+  selisih per koleksi dan menyimpan hanya tabel yang berubah (upsert + hapus baris yang hilang).
+- `lib/supabase/db.ts` adalah satu-satunya tempat pemetaan camelCase ↔ snake_case.
+- Kolom `sort_order` menjaga urutan tampilan seperti sebelumnya; `stock_log` diganti utuh
+  (tidak punya id di aplikasi).
+
+> Catatan: penulisan per koleksi berarti *last writer wins* bila dua admin mengubah data yang
+> sama bersamaan — cukup untuk satu toko dengan sedikit admin.
+
 Variabel lingkungan opsional: `NEXT_PUBLIC_SITE_URL` (default `http://localhost:3000`) untuk
-metadata/OG, `sitemap.xml`, dan `robots.txt`.
+metadata/OG.
 
 ## Struktur
 
 ```
 app/
-  layout.tsx            metadata global, JSON-LD LocalBusiness, provider (store/toast/modal/print/receipt)
-  globals.css           stylesheet asli (1:1) + token Tailwind v4
+  layout.tsx            metadata global + JSON-LD LocalBusiness
+  globals.css           stylesheet asli (1:1) + token Tailwind v4 + style halaman login
   page.tsx              redirect -> /dashboard
-  (app)/layout.tsx      shell aplikasi (sidebar + topbar + <main class="content">)
+  login/                halaman + server action login admin
+  (app)/layout.tsx      cek sesi/admin, provider (store/toast/modal/print/receipt) + shell aplikasi
   (app)/<halaman>/      satu route per halaman (server component + metadata per halaman)
   sitemap.ts, robots.ts
 components/
@@ -43,8 +103,10 @@ components/
   charts.tsx            Spark, StackChart, BarChart
   views/                implementasi client per halaman
 lib/
-  types.ts, seed.ts     data demo + tipe
-  store.tsx             StoreProvider (localStorage, sama seperti versi vanilla)
+  types.ts, seed.ts     tipe + data demo (dipakai `npm run db:seed` & reset)
+  store.tsx             StoreProvider (muat/simpan ke Supabase)
+  supabase/             client.ts (browser), server.ts (cookie + cek admin), db.ts (pemetaan tabel)
+  auth-actions.ts       server action logout
   selectors.ts, format.ts, icons.ts, nav.ts, fonts.ts, receiptPaper.ts
 fonts/                  Inter 24pt (dipakai next/font/local)
 legacy/                 HTML/CSS/JS asli (arsip, dipakai sebagai pembanding)
@@ -61,11 +123,11 @@ scripts/serve-legacy.cjs  server statis untuk membuka legacy/ di browser
 Semua data masih **data demo fiktif** (sama seperti HTML asli):
 
 - **Data toko**: alamat, nomor telepon, nama kasir, logo → `app/(app)/pengaturan/page.tsx` (disimpan di localStorage).
-- **Data produk, pelanggan, supplier, pembelian, pekerjaan instalasi** → demo, ganti lewat UI atau
-  ganti `lib/seed.ts` bila ingin data awal yang berbeda.
+- **Data produk, pelanggan, supplier, pembelian, pekerjaan instalasi** → tersimpan di Supabase,
+  ganti lewat UI atau lewat `lib/seed.ts` bila ingin data awal yang berbeda.
 - **Nomor WhatsApp / tautan kontak resmi** belum ada di HTML asli (belum ada di layout).
 - **URL produksi** untuk canonical/OG/sitemap: set `NEXT_PUBLIC_SITE_URL`.
-- **Integrasi backend**: `lib/store.tsx` (StoreProvider) sengaja dipisah agar mudah diganti API.
+- **Backend**: Supabase (lihat bagian *Supabase & login admin* di atas).
 
 ## Catatan parity
 
@@ -167,4 +229,6 @@ node scripts/cdp.cjs viewshot <file> <w> <h> [url] [@prescript]  # screenshot 1 
 node scripts/cdp.cjs mobile <file> 390 844
 node scripts/cdp.cjs evalm "@scripts/audit-mobile.js" 390 844   # audit overflow mobile
 node scripts/cdp.cjs evalm "@scripts/audit-drawer-one.js" 1600 1000 http://localhost:3000/transaksi
+npm run db:push                          # terapkan skema Supabase (butuh SUPABASE_ACCESS_TOKEN)
+npm run db:seed                          # import ulang data demo (butuh SUPABASE_SERVICE_ROLE_KEY)
 ```
