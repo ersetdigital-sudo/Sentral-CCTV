@@ -13,8 +13,9 @@ import { JOB_STATUS, TECHS, type Job } from '@/lib/types'
 
 export default function JobsView() {
   const { db, ready, update } = useStore()
-  const { open } = useModal()
+  const { open, confirm } = useModal()
   const { open: openDrawer, close: closeDrawer } = useDrawer()
+  const toast = useToast()
   const [q, setQ] = useState('')
   const [st, setSt] = useState('')
 
@@ -47,12 +48,28 @@ export default function JobsView() {
     })
   }
 
+  const deleteJob = (j: Job, after?: () => void) => {
+    confirm(
+      <>
+        Hapus pekerjaan <b>{j.no}</b>? Riwayat status, material, dan tagihan pekerjaan ini ikut hilang. Tindakan ini
+        tidak dapat dibatalkan.
+      </>,
+      () => {
+        update((d) => {
+          d.jobs = d.jobs.filter((x) => x.id !== j.id)
+        })
+        toast('Pekerjaan dihapus')
+        after?.()
+      },
+    )
+  }
+
   const jobDetail = (j: Job) => {
     openDrawer({
       title: `Pekerjaan ${j.no}`,
       subtitle: j.type,
       accent: 'indigo',
-      body: <JobDetail job={j} onEdit={openJobForm} />,
+      body: <JobDetail job={j} onEdit={openJobForm} onDelete={() => deleteJob(j, closeDrawer)} />,
     })
   }
 
@@ -102,6 +119,9 @@ export default function JobsView() {
             <button className="icon-btn" title="Edit" onClick={() => openJobForm(j)}>
               <Icon name="edit" />
             </button>
+            <button className="icon-btn del" title="Hapus" onClick={() => deleteJob(j)}>
+              <Icon name="trash" />
+            </button>
           </div>
         ),
       },
@@ -146,7 +166,7 @@ export default function JobsView() {
 }
 
 /* ---------- Drawer detail pekerjaan ---------- */
-function JobDetail({ job, onEdit }: { job: Job; onEdit: (j: Job) => void }) {
+function JobDetail({ job, onEdit, onDelete }: { job: Job; onEdit: (j: Job) => void; onDelete: () => void }) {
   const { db, update } = useStore()
   const toast = useToast()
   const { close } = useDrawer()
@@ -393,6 +413,9 @@ function JobDetail({ job, onEdit }: { job: Job; onEdit: (j: Job) => void }) {
       </section>
 
       <DrawerFoot>
+        <button className="btn danger" style={{ marginRight: 'auto' }} onClick={onDelete}>
+          <Icon name="trash" /> Hapus
+        </button>
         <button className="btn" onClick={close}>
           Tutup
         </button>
