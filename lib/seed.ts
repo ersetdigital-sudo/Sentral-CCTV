@@ -1,5 +1,5 @@
 import { addDays, daysAgo, isoDate } from './format'
-import { CATEGORIES, PAY_METHODS, type DB, type Job } from './types'
+import { DEFAULT_CATEGORIES, PAY_METHODS, type Category, type DB, type Job } from './types'
 
 /** Data demo fiktif — identik dengan seed() versi vanilla. */
 export function seed(): DB {
@@ -15,6 +15,8 @@ export function seed(): DB {
     min: number,
     priceTech: number,
   ) => ({ id, sku, name, cat, brand, cost, price, priceTech, stock, min, unit: 'pcs' })
+
+  const categories: Category[] = DEFAULT_CATEGORIES.map((name, i) => ({ id: `cat${i + 1}`, name }))
 
   const products = [
     P('p1', 'CAM-HK-D2MP', 'Hikvision 2MP Dome Camera', 'Kamera Analog', 'Hikvision', 185000, 265000, 34, 10, 245000),
@@ -454,7 +456,18 @@ export function seed(): DB {
     footer: 'Terima kasih telah berbelanja. Garansi sesuai ketentuan toko.',
   }
 
-  return { products, customers, suppliers, purchases, sales, jobs, stockLog, settings, seq: { sale: n, job: 35, pur: 105 } }
+  return {
+    categories,
+    products,
+    customers,
+    suppliers,
+    purchases,
+    sales,
+    jobs,
+    stockLog,
+    settings,
+    seq: { sale: n, job: 35, pur: 105 },
+  }
 }
 
-export const CATEGORY_LIST = CATEGORIES
+export const CATEGORY_LIST = DEFAULT_CATEGORIES

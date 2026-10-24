@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
+  Category,
   Customer,
   DB,
   Job,
@@ -11,6 +12,7 @@ import type {
   StockLog,
   Supplier,
 } from '../types'
+import { DEFAULT_CATEGORIES } from '../types'
 
 /**
  * Lapisan pemetaan antara bentuk DB aplikasi (camelCase, dipakai semua view)
@@ -49,6 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export function emptyDb(): DB {
   return {
+    categories: [],
     products: [],
     customers: [],
     suppliers: [],
@@ -62,6 +65,10 @@ export function emptyDb(): DB {
 }
 
 // ------------------------------------------------------------------ converters
+const categoryRow = (c: Category): Row => ({ id: c.id, name: c.name })
+
+const categoryFrom = (r: Row): Category => ({ id: text(r.id), name: text(r.name) })
+
 const productRow = (p: Product): Row => ({
   id: p.id,
   sku: p.sku,
@@ -281,8 +288,9 @@ const countersFrom = (r: Row | undefined): DB['seq'] => ({
 const ID_TABLES = ['products', 'customers', 'suppliers', 'purchases', 'sales', 'jobs'] as const
 
 export async function fetchDb(sb: SupabaseClient): Promise<DB> {
-  const [products, customers, suppliers, purchases, sales, jobs, stockLog, settings, counters] =
+  const [categories, products, customers, suppliers, purchases, sales, jobs, stockLog, settings, counters] =
     await Promise.all([
+      sb.from('categories').select('*').order('sort_order', { ascending: true }),
       ...ID_TABLES.map((t) => sb.from(t).select('*').order('sort_order', { ascending: true })),
       sb.from('stock_log').select('*').order('id', { ascending: true }),
       sb.from('settings').select('*').eq('id', 1).maybeSingle(),
@@ -294,8 +302,23 @@ export async function fetchDb(sb: SupabaseClient): Promise<DB> {
   )
   if (failed?.error) throw new Error(failed.error.message)
 
+  // Tabel categories bisa belum ada bila skema belum di-push ulang: pakai
+  // kategori bawaan + kategori yang sudah dipakai produk lama.
+  if (categories.error && categories.error.code !== '42P01') throw new Error(categories.error.message)
+
+  const productList = (products.data ?? []).map(productFrom)
+  const categoryList = (categories.data ?? []).map(categoryFrom)
+  if (!categoryList.length) {
+    const names = [...DEFAULT_CATEGORIES]
+    productList.forEach((p: Product) => {
+      if (p.cat && !names.includes(p.cat)) names.push(p.cat)
+    })
+    categoryList.push(...names.map((name, i) => ({ id: `cat-${i + 1}`, name })))
+  }
+
   return {
-    products: (products.data ?? []).map(productFrom),
+    categories: categoryList,
+    products: productList,
     customers: (customers.data ?? []).map(customerFrom),
     suppliers: (suppliers.data ?? []).map(supplierFrom),
     purchases: (purchases.data ?? []).map(purchaseFrom),
@@ -342,6 +365,8 @@ const changed = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify
  * tidak menulis ulang seluruh database.
  */
 export async function saveDb(sb: SupabaseClient, prev: DB, next: DB): Promise<void> {
+  if (changed(prev.categories, next.categories))
+    await replaceRows(sb, 'categories', next.categories.map(categoryRow))
   if (changed(prev.products, next.products)) await replaceRows(sb, 'products', next.products.map(productRow))
   if (changed(prev.customers, next.customers))
     await replaceRows(sb, 'customers', next.customers.map(customerRow))

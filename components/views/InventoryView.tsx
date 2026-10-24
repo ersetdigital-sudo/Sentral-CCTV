@@ -9,7 +9,7 @@ import { useToast } from '@/components/Toast'
 import { useStore } from '@/lib/store'
 import { fDateTime, num, rp, uid } from '@/lib/format'
 import { stockStatus } from '@/lib/selectors'
-import { CATEGORIES, type Product } from '@/lib/types'
+import type { Product } from '@/lib/types'
 
 type Tab = 'list' | 'log'
 
@@ -145,7 +145,7 @@ export default function InventoryView() {
 
       <div className="grid kpis inv-kpis">
         {kpi('hero', 'wallet', 'Nilai Stok (Modal)', value, `${db.products.reduce((a, p) => a + p.stock, 0).toLocaleString('id-ID')} unit di gudang`, true)}
-        {kpi('b', 'box', 'Total Produk', db.products.length, `${CATEGORIES.length} kategori`)}
+        {kpi('b', 'box', 'Total Produk', db.products.length, `${db.categories.length} kategori`)}
         {kpi('o', 'alert', 'Stok Menipis', low, 'perlu restock segera')}
         {kpi('p', 'x', 'Stok Habis', out, 'tidak bisa dijual')}
       </div>
@@ -175,9 +175,9 @@ export default function InventoryView() {
                 onChange={(e) => setInventoryFilter({ cat: e.target.value })}
               >
                 <option value="">Semua Kategori</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {db.categories.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
                   </option>
                 ))}
               </select>
@@ -345,7 +345,7 @@ function ProductForm({ product }: { product?: Product }) {
   const [e, setE] = useState({
     sku: product?.sku ?? '',
     name: product?.name ?? '',
-    cat: product?.cat ?? CATEGORIES[0],
+    cat: product?.cat ?? db.categories[0]?.name ?? '',
     brand: product?.brand ?? '',
     cost: product ? String(product.cost) : '',
     price: product ? String(product.price) : '',
@@ -455,9 +455,9 @@ function ProductForm({ product }: { product?: Product }) {
         </Field>
         <Field label="Kategori">
           <select className="input" value={e.cat} onChange={(ev) => set('cat', ev.target.value)}>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
+            {db.categories.map((c) => (
+              <option key={c.id} value={c.name}>
+                {c.name}
               </option>
             ))}
           </select>

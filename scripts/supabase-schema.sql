@@ -67,6 +67,12 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- ------------------------------------------------------------------ data toko
+create table if not exists public.categories (
+  id text primary key,
+  sort_order integer not null default 0,
+  name text not null default ''
+);
+
 create table if not exists public.products (
   id text primary key,
   sort_order integer not null default 0,
@@ -190,7 +196,7 @@ create table if not exists public.counters (
 do $$
 declare t text;
 begin
-  foreach t in array array['products','customers','suppliers','purchases','sales','jobs','stock_log','settings','counters']
+  foreach t in array array['categories','products','customers','suppliers','purchases','sales','jobs','stock_log','settings','counters']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists %I on public.%I', t || '_admin_all', t);
@@ -206,7 +212,7 @@ end $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['products','customers','suppliers','purchases','sales','jobs']
+  foreach t in array array['categories','products','customers','suppliers','purchases','sales','jobs']
   loop
     execute format('alter table public.%I add column if not exists sort_order integer not null default 0', t);
   end loop;

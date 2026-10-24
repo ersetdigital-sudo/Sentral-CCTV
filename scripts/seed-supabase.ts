@@ -32,9 +32,9 @@ async function main() {
   await saveDb(sb, emptyDb(), db)
 
   console.log(
-    `OK: ${db.products.length} produk, ${db.customers.length} pelanggan, ${db.suppliers.length} supplier, ` +
-      `${db.purchases.length} pembelian, ${db.sales.length} penjualan, ${db.jobs.length} instalasi, ` +
-      `${db.stockLog.length} log stok.`,
+    `OK: ${db.categories.length} kategori, ${db.products.length} produk, ${db.customers.length} pelanggan, ` +
+      `${db.suppliers.length} supplier, ${db.purchases.length} pembelian, ${db.sales.length} penjualan, ` +
+      `${db.jobs.length} instalasi, ${db.stockLog.length} log stok.`,
   )
 }
 

@@ -2,6 +2,11 @@ export type PriceType = 'Pelanggan' | 'Teknisi'
 
 export const PRICE_TYPES: PriceType[] = ['Pelanggan', 'Teknisi']
 
+export type Category = {
+  id: string
+  name: string
+}
+
 export type Product = {
   id: string
   sku: string
@@ -130,6 +135,7 @@ export type Settings = {
 }
 
 export type DB = {
+  categories: Category[]
   products: Product[]
   customers: Customer[]
   suppliers: Supplier[]
@@ -141,7 +147,8 @@ export type DB = {
   seq: { sale: number; job: number; pur: number }
 }
 
-export const CATEGORIES = [
+/** Kategori awal — dipakai saat seed dan bila tabel kategori masih kosong. */
+export const DEFAULT_CATEGORIES = [
   'Kamera Analog',
   'Kamera IP',
   'DVR / XVR',

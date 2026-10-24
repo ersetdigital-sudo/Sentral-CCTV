@@ -9,7 +9,7 @@ import { useReceipt } from '@/components/Receipt'
 import { useStore } from '@/lib/store'
 import { addDays, fDate, num, rp, tempoLabel, uid } from '@/lib/format'
 import { adjustStock, priceFor } from '@/lib/selectors'
-import { CATEGORIES, PAY_METHODS, PRICE_TYPES, TEMPO_PRESETS, type PriceType, type Sale } from '@/lib/types'
+import { PAY_METHODS, PRICE_TYPES, TEMPO_PRESETS, type PriceType, type Sale } from '@/lib/types'
 import type { IconName } from '@/lib/icons'
 
 const catIcon = (cat: string): IconName =>
@@ -196,7 +196,7 @@ export default function PosView() {
           </div>
 
           <div className="cat-chips" id="posCats">
-            {['Semua', ...CATEGORIES].map((c) => (
+            {['Semua', ...db.categories.map((x) => x.name)].map((c) => (
               <button key={c} className={`chip ${c === cat ? 'active' : ''}`} onClick={() => setCat(c)}>
                 {c}
               </button>

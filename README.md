@@ -50,7 +50,7 @@ SUPABASE_ACCESS_TOKEN=sbp_xxx npm run db:push   # jalankan scripts/supabase-sche
 Butuh personal access token dari Supabase (Account → Access Tokens). Skrip memakai Management
 API, jadi tidak perlu `psql`. Skema bersifat idempotent (aman dijalankan ulang).
 
-Yang dibuat: `profiles` (admin/staff), `products`, `customers`, `suppliers`, `purchases`, `sales`,
+Yang dibuat: `profiles` (admin/staff), `categories`, `products`, `customers`, `suppliers`, `purchases`, `sales`,
 `jobs`, `stock_log`, `settings`, `counters` — semuanya RLS aktif dengan policy
 `public.is_admin()`. Sign-up publik dimatikan, user baru hanya lahir dari dashboard/Admin API dan
 otomatis dapat baris `profiles` lewat trigger `handle_new_user`.
@@ -155,6 +155,18 @@ Semua data masih **data demo fiktif** (sama seperti HTML asli):
   struktur DOM, class, dan nilai computed style per elemen.
 - CSS aplikasi sengaja **tidak** dibungkus `@layer` (sama seperti file asli), supaya utility
   class Tailwind tidak menimpa class kustom seperti `grid` / `block`.
+
+## Penambahan (v10) — kelola kategori
+
+- Halaman **Kategori Produk** (`/kategori`) sekarang bisa dipakai untuk **menambah, mengganti nama,
+  dan menghapus kategori** lewat tombol di kolom Aksi.
+- Kategori disimpan di tabel baru `categories` (Supabase), bukan lagi konstanta di kode. Ganti nama
+  kategori otomatis memindahkan semua produk yang memakai nama lama, dan kategori yang masih
+  dipakai produk tidak bisa dihapus (pindahkan produknya dulu).
+- Daftar kategori di **form produk**, **filter inventory**, dan **chip kategori di Kasir** ikut
+  membaca data dari tabel ini, jadi kategori baru langsung bisa dipakai.
+- Jalankan `SUPABASE_ACCESS_TOKEN=sbp_xxx npm run db:push` sekali supaya tabel `categories` dibuat.
+  Bila tabel belum ada, aplikasi memakai kategori bawaan + kategori yang sudah dipakai produk lama.
 
 ## Penambahan (v9) — harga teknisi, tempo per transaksi & laporan piutang
 
