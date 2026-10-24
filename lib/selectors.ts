@@ -1,5 +1,5 @@
 import { addDays, daysBetween } from './format'
-import type { DB, Job, PriceType, Product, Purchase, Sale } from './types'
+import type { Customer, DB, Job, PriceType, Product, Purchase, Sale } from './types'
 
 export const productOf = (db: DB, id?: string) => db.products.find((p) => p.id === id)
 export const customerOf = (db: DB, id?: string) => db.customers.find((c) => c.id === id) ?? db.customers[0]
@@ -193,6 +193,14 @@ export function adjustStock(db: DB, pid: string, qty: number, type: string, ref:
 export function removeSale(db: DB, sale: Sale): DB {
   db.sales = db.sales.filter((s) => s.id !== sale.id)
   sale.items.forEach((i) => adjustStock(db, i.pid, i.qty, 'Masuk', sale.inv))
+  return db
+}
+
+/** Hapus pelanggan + seluruh transaksi penjualan dan pekerjaan instalasinya. */
+export function removeCustomer(db: DB, customer: Customer): DB {
+  db.sales.filter((s) => s.custId === customer.id).forEach((s) => removeSale(db, s))
+  db.jobs = db.jobs.filter((j) => j.custId !== customer.id)
+  db.customers = db.customers.filter((c) => c.id !== customer.id)
   return db
 }
 

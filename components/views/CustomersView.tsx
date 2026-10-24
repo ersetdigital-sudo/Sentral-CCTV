@@ -9,12 +9,12 @@ import { DrawerFoot, useDrawer } from '@/components/Drawer'
 import { useToast } from '@/components/Toast'
 import { useStore } from '@/lib/store'
 import { fDate, num, rp, tempoLabel, uid } from '@/lib/format'
-import { custDebt, custJobs, custSales, jobTotal, removeSale } from '@/lib/selectors'
+import { custDebt, custJobs, custSales, jobTotal, removeCustomer, removeSale } from '@/lib/selectors'
 import type { Customer, Sale } from '@/lib/types'
 
 export default function CustomersView() {
-  const { db, ready, update, setPosCustomer } = useStore()
-  const { open } = useModal()
+  const { db, ready, update, setPosCustomer, posCustomer } = useStore()
+  const { open, confirm } = useModal()
   const { open: openDrawer, close: closeDrawer } = useDrawer()
   const toast = useToast()
   const router = useRouter()
@@ -36,36 +36,78 @@ export default function CustomersView() {
     })
   }
 
+  const deleteCustomer = (c: Customer, after?: () => void) => {
+    const s = custSales(db, c.id)
+    const j = custJobs(db, c.id)
+
+    const doDelete = () => {
+      update((d) => removeCustomer(d, c))
+      if (posCustomer === c.id) setPosCustomer('c0')
+      toast(s.length || j.length ? 'Pelanggan dan riwayatnya dihapus' : 'Pelanggan dihapus')
+      after?.()
+    }
+
+    if (!s.length && !j.length) {
+      confirm(
+        <>
+          Hapus pelanggan <b>{c.name}</b>? Tindakan ini tidak dapat dibatalkan.
+        </>,
+        doDelete,
+      )
+      return
+    }
+
+    confirm(
+      <>
+        Pelanggan <b>{c.name}</b> masih punya <b>{s.length} transaksi</b> dan <b>{j.length} pekerjaan instalasi</b>.
+        Hapus pelanggan beserta seluruh riwayatnya?
+      </>,
+      () =>
+        confirm(
+          <>
+            Yakin? Semua transaksi (stok dikembalikan) dan pekerjaan instalasi ikut terhapus. Tindakan ini tidak
+            dapat dibatalkan.
+          </>,
+          doDelete,
+          'Hapus Semua',
+        ),
+      'Lanjut',
+    )
+  }
+
   const customerDetail = (c: Customer) => {
     openDrawer({
       title: c.name,
       subtitle: c.phone,
       accent: 'green',
-      body: <CustomerDetail customer={c} />,
+      body: <CustomerDetail customer={c} onDelete={() => deleteCustomer(c, closeDrawer)} />,
     })
   }
 
+  /* Tabel ringkas: alamat & rincian lain ada di drawer detail supaya tidak perlu scroll samping. */
   const rows: Cell[][] = list.map((c) => {
     const s = custSales(db, c.id)
     const j = custJobs(db, c.id)
     const debt = custDebt(db, c.id)
     return [
-      { label: 'Nama', value: (
-        <>
-          <b>{c.name}</b>
-          {c.priceType === 'Teknisi' ? (
-            <span className="badge b" style={{ marginLeft: 6 }}>
-              Teknisi
-            </span>
-          ) : null}
-        </>
-      ) },
-      { label: 'Telepon', value: c.phone },
-      { label: 'Alamat', value: c.address, cls: 'wrap' },
-      { label: 'Pembelian', value: `${s.length} trx`, align: 'r' },
-      { label: 'Instalasi', value: `${j.length} job`, align: 'r' },
       {
-        label: 'Total',
+        label: 'Pelanggan',
+        value: (
+          <>
+            <b>{c.name}</b>
+            {c.priceType === 'Teknisi' ? (
+              <span className="badge b" style={{ marginLeft: 6 }}>
+                Teknisi
+              </span>
+            ) : null}
+          </>
+        ),
+        cls: 'wrap',
+      },
+      { label: 'Telepon', value: c.phone },
+      { label: 'Aktivitas', value: `${s.length} trx · ${j.length} job` },
+      {
+        label: 'Total Transaksi',
         align: 'r',
         value: rp(
           s.reduce((a, x) => a + x.total, 0) +
@@ -73,7 +115,7 @@ export default function CustomersView() {
         ),
       },
       {
-        label: 'Sisa Tagihan',
+        label: 'Tagihan',
         align: 'r',
         value: debt ? <b style={{ color: 'var(--danger)' }}>{rp(debt)}</b> : <span className="badge g">Lunas</span>,
       },
@@ -86,6 +128,9 @@ export default function CustomersView() {
             </button>
             <button className="icon-btn" title="Edit" onClick={() => openCustomerForm(c)}>
               <Icon name="edit" />
+            </button>
+            <button className="icon-btn del" title="Hapus" onClick={() => deleteCustomer(c)}>
+              <Icon name="trash" />
             </button>
           </div>
         ),
@@ -107,13 +152,11 @@ export default function CustomersView() {
       <div id="cuList">
         <DataTable
           head={[
-            'Nama',
+            'Pelanggan',
             'Telepon',
-            'Alamat',
-            { label: 'Pembelian', align: 'r' },
-            { label: 'Instalasi', align: 'r' },
+            'Aktivitas',
             { label: 'Total Transaksi', align: 'r' },
-            { label: 'Sisa Tagihan', align: 'r' },
+            { label: 'Tagihan', align: 'r' },
             { label: 'Aksi', align: 'r' },
           ]}
           rows={rows}
@@ -124,7 +167,7 @@ export default function CustomersView() {
 }
 
 /* ---------- Drawer detail pelanggan ---------- */
-function CustomerDetail({ customer }: { customer: Customer }) {
+function CustomerDetail({ customer, onDelete }: { customer: Customer; onDelete: () => void }) {
   const { db, update, setPosCustomer } = useStore()
   const { close } = useDrawer()
   const { confirm } = useModal()
@@ -254,6 +297,9 @@ function CustomerDetail({ customer }: { customer: Customer }) {
       </section>
 
       <DrawerFoot>
+        <button className="btn danger" style={{ marginRight: 'auto' }} onClick={onDelete}>
+          <Icon name="trash" /> Hapus
+        </button>
         <button className="btn" onClick={close}>
           Tutup
         </button>
