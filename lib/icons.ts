@@ -3,7 +3,7 @@ export type IconName =
   | 'chart' | 'settings' | 'menu' | 'x' | 'search' | 'plus' | 'edit' | 'trash' | 'eye'
   | 'printer' | 'check' | 'alert' | 'info' | 'map' | 'camera' | 'money' | 'download'
   | 'minus' | 'calendar' | 'refresh' | 'more' | 'arrowUp' | 'arrowDown' | 'wallet' | 'bell'
-  | 'chat' | 'logout'
+  | 'chat' | 'logout' | 'hardHat'
 
 /** Inline SVG paths (gaya Lucide) — sama persis dengan file aslinya. */
 export const ICONS: Record<IconName, string> = {
@@ -43,4 +43,5 @@ export const ICONS: Record<IconName, string> = {
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
   chat: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-4.1-.9L3 21l1.9-4.9A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>',
+  hardHat: '<path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><path d="M14 6a6 6 0 0 1 6 6v3"/>',
 }

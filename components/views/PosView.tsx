@@ -187,7 +187,7 @@ export default function PosView() {
                   type="button"
                   className={t === priceType ? 'active' : ''}
                   onClick={() => setPriceType(t)}
-                  title={t === 'Teknisi' ? 'Harga khusus teknisi / rekanan' : 'Harga jual pelanggan umum'}
+                  title={t === 'Grosir' ? 'Harga khusus rekanan' : 'Harga jual pelanggan umum'}
                 >
                   {t}
                 </button>
@@ -222,7 +222,7 @@ export default function PosView() {
                     <div className="mono muted">{p.sku}</div>
                     <div className="pr">{rp(priceFor(p, priceType))}</div>
                     <div className="pr-alt">
-                      {priceType === 'Teknisi' ? 'Pelanggan' : 'Teknisi'} {rp(priceType === 'Teknisi' ? p.price : p.priceTech)}
+                      {priceType === 'Grosir' ? 'Pelanggan' : 'Grosir'} {rp(priceType === 'Grosir' ? p.price : p.priceGrosir)}
                     </div>
                     <div className="small">
                       <span className={`badge ${c}`}>{s === 'Habis' ? 'Habis' : `Stok ${p.stock}`}</span>
@@ -242,7 +242,7 @@ export default function PosView() {
           <div className="card-h">
             <h3>
               Keranjang ({count}){' '}
-              <span className={`badge ${priceType === 'Teknisi' ? 'b' : ''}`} style={{ verticalAlign: 'middle' }}>
+              <span className={`badge ${priceType === 'Grosir' ? 'b' : ''}`} style={{ verticalAlign: 'middle' }}>
                 {priceType}
               </span>
             </h3>
@@ -280,7 +280,7 @@ export default function PosView() {
                 {db.customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
-                    {c.priceType === 'Teknisi' ? ' (Teknisi)' : ''}
+                    {c.priceType === 'Grosir' ? ' (Grosir)' : ''}
                   </option>
                 ))}
               </select>

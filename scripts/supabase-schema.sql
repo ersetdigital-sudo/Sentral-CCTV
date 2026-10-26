@@ -88,6 +88,16 @@ create table if not exists public.products (
   unit text not null default 'pcs'
 );
 
+create table if not exists public.technicians (
+  id text primary key,
+  sort_order integer not null default 0,
+  name text not null default '',
+  phone text not null default ''
+);
+
+-- Tabel technicians sudah terlanjur dibuat tanpa kolom phone di project lama.
+alter table public.technicians add column if not exists phone text not null default '';
+
 create table if not exists public.customers (
   id text primary key,
   sort_order integer not null default 0,
@@ -196,7 +206,7 @@ create table if not exists public.counters (
 do $$
 declare t text;
 begin
-  foreach t in array array['categories','products','customers','suppliers','purchases','sales','jobs','stock_log','settings','counters']
+  foreach t in array array['categories','technicians','products','customers','suppliers','purchases','sales','jobs','stock_log','settings','counters']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists %I on public.%I', t || '_admin_all', t);
@@ -212,7 +222,7 @@ end $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['categories','products','customers','suppliers','purchases','sales','jobs']
+  foreach t in array array['categories','technicians','products','customers','suppliers','purchases','sales','jobs']
   loop
     execute format('alter table public.%I add column if not exists sort_order integer not null default 0', t);
   end loop;

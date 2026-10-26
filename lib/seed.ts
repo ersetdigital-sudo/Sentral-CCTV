@@ -1,5 +1,5 @@
 import { addDays, daysAgo, isoDate } from './format'
-import { DEFAULT_CATEGORIES, PAY_METHODS, type Category, type DB, type Job } from './types'
+import { DEFAULT_CATEGORIES, DEFAULT_TECHS, PAY_METHODS, type Category, type DB, type Job, type Technician } from './types'
 
 /** Data demo fiktif — identik dengan seed() versi vanilla. */
 export function seed(): DB {
@@ -13,10 +13,12 @@ export function seed(): DB {
     price: number,
     stock: number,
     min: number,
-    priceTech: number,
-  ) => ({ id, sku, name, cat, brand, cost, price, priceTech, stock, min, unit: 'pcs' })
+    priceGrosir: number,
+  ) => ({ id, sku, name, cat, brand, cost, price, priceGrosir, stock, min, unit: 'pcs' })
 
   const categories: Category[] = DEFAULT_CATEGORIES.map((name, i) => ({ id: `cat${i + 1}`, name }))
+
+  const technicians: Technician[] = DEFAULT_TECHS.map((name, i) => ({ id: `tech${i + 1}`, name, phone: '' }))
 
   const products = [
     P('p1', 'CAM-HK-D2MP', 'Hikvision 2MP Dome Camera', 'Kamera Analog', 'Hikvision', 185000, 265000, 34, 10, 245000),
@@ -42,9 +44,9 @@ export function seed(): DB {
   const customers = [
     { id: 'c0', name: 'Pelanggan Umum', phone: '-', address: '-', priceType: 'Pelanggan' as const },
     { id: 'c1', name: 'Budi Santoso', phone: '0812-3456-7890', address: 'Jl. Melati No. 12, Sleman, Yogyakarta', priceType: 'Pelanggan' as const },
-    { id: 'c2', name: 'Toko Makmur Jaya', phone: '0813-2211-4455', address: 'Jl. Pasar Baru No. 45, Bantul, Yogyakarta', priceType: 'Teknisi' as const, dueDays: 7 },
+    { id: 'c2', name: 'Toko Makmur Jaya', phone: '0813-2211-4455', address: 'Jl. Pasar Baru No. 45, Bantul, Yogyakarta', priceType: 'Grosir' as const, dueDays: 7 },
     { id: 'c3', name: 'Siti Rahmawati', phone: '0857-1122-3344', address: 'Perum Griya Asri Blok C3, Depok Sleman', priceType: 'Pelanggan' as const },
-    { id: 'c4', name: 'CV Sinar Abadi', phone: '0274-555-0192', address: 'Jl. Magelang Km 7, Sleman, Yogyakarta', priceType: 'Teknisi' as const, dueDays: 30 },
+    { id: 'c4', name: 'CV Sinar Abadi', phone: '0274-555-0192', address: 'Jl. Magelang Km 7, Sleman, Yogyakarta', priceType: 'Grosir' as const, dueDays: 30 },
     { id: 'c5', name: 'Klinik Sehat Sentosa', phone: '0821-7788-9900', address: 'Jl. Kaliurang Km 9, Ngaglik, Sleman', priceType: 'Pelanggan' as const },
     { id: 'c6', name: 'Agus Firmansyah', phone: '0878-6655-4433', address: 'Jl. Wonosari Km 5, Banguntapan, Bantul', priceType: 'Pelanggan' as const },
   ]
@@ -179,7 +181,7 @@ export function seed(): DB {
           name: pr.name,
           sku: pr.sku,
           qty,
-          price: priceType === 'Teknisi' ? pr.priceTech : pr.price,
+          price: priceType === 'Grosir' ? pr.priceGrosir : pr.price,
           cost: pr.cost,
         }
       })
@@ -229,7 +231,7 @@ export function seed(): DB {
         name: pr.name,
         sku: pr.sku,
         qty,
-        price: priceType === 'Teknisi' ? pr.priceTech : pr.price,
+        price: priceType === 'Grosir' ? pr.priceGrosir : pr.price,
         cost: pr.cost,
       }
     })
@@ -458,6 +460,7 @@ export function seed(): DB {
 
   return {
     categories,
+    technicians,
     products,
     customers,
     suppliers,

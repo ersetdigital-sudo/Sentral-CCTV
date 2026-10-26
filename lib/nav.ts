@@ -19,6 +19,7 @@ export const ROUTES: NavItem[] = [
   { key: 'suppliers', path: '/supplier', label: 'Supplier', icon: 'truck' },
   { key: 'purchases', path: '/pembelian', label: 'Pembelian Barang', icon: 'cart' },
   { key: 'jobs', path: '/instalasi', label: 'Jasa Instalasi', icon: 'tool', sep: 'Layanan' },
+  { key: 'techs', path: '/teknisi', label: 'Daftar Teknisi', icon: 'hardHat' },
   { key: 'customers', path: '/pelanggan', label: 'Pelanggan', icon: 'users' },
   { key: 'receivables', path: '/piutang', label: 'Laporan Piutang', icon: 'wallet', sep: 'Lainnya' },
   { key: 'reports', path: '/laporan', label: 'Laporan', icon: 'chart' },

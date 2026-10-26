@@ -9,7 +9,10 @@ import { useToast } from '@/components/Toast'
 import { useStore } from '@/lib/store'
 import { daysAgo, fDateTime, isoDate, mapsUrl, num, rp, uid } from '@/lib/format'
 import { jobTotal } from '@/lib/selectors'
-import { JOB_STATUS, TECHS, type Job } from '@/lib/types'
+import { JOB_STATUS, type Job } from '@/lib/types'
+
+/** Nilai sentinel untuk opsi "+ Tambah teknisi baru…" di dropdown. */
+const NEW_TECH = '__new_tech__'
 
 export default function JobsView() {
   const { db, ready, update } = useStore()
@@ -419,6 +422,9 @@ function JobDetail({ job, onEdit, onDelete }: { job: Job; onEdit: (j: Job) => vo
         <button className="btn" onClick={close}>
           Tutup
         </button>
+        <a className="btn" href={`/api/nota/${j.id}`} target="_blank" rel="noopener">
+          <Icon name="printer" /> Cetak Nota
+        </a>
         <button className="btn primary" onClick={() => onEdit(j)}>
           <Icon name="edit" /> Edit Pekerjaan
         </button>
@@ -436,11 +442,11 @@ function JobForm({ job }: { job?: Job }) {
   const toast = useToast()
 
   const [e, setE] = useState({
-    custId: job?.custId ?? db.customers[1]?.id ?? '',
+    custId: job?.custId ?? (db.customers.find((c) => c.id !== 'c0')?.id ?? db.customers[0]?.id ?? ''),
     type: job?.type ?? '',
-    address: job?.address ?? db.customers[1]?.address ?? '',
+    address: job?.address ?? '',
     schedule: job ? toLocalInput(job.schedule) : toLocalInput(daysAgo(-2, 9)),
-    tech: job?.tech ?? TECHS[0],
+    tech: job?.tech ?? db.technicians[0]?.name ?? '',
     status: job?.status ?? 'Permintaan Baru',
     pay: job?.pay ?? 'Belum Bayar',
     notes: job?.notes ?? '',
@@ -453,8 +459,29 @@ function JobForm({ job }: { job?: Job }) {
     job?.materials.map((m) => ({ pid: m.pid, qty: String(m.qty) })) ?? [{ pid: db.products[0]?.id ?? '', qty: '1' }],
   )
   const [err, setErr] = useState<Record<string, boolean>>({})
+  const [addingTech, setAddingTech] = useState(false)
+  const [newTech, setNewTech] = useState('')
 
   const set = (k: keyof typeof e, v: string) => setE((prev) => ({ ...prev, [k]: v }))
+
+  /** Simpan teknisi baru ke daftar, lalu pakai sebagai teknisi pekerjaan ini. */
+  const applyNewTech = () => {
+    const value = newTech.trim()
+    if (!value) {
+      toast('Nama teknisi wajib diisi', 'err')
+      return
+    }
+    const existing = db.technicians.find((t) => t.name.toLowerCase() === value.toLowerCase())
+    if (!existing) {
+      update((d) => {
+        d.technicians.push({ id: uid('tech'), name: value, phone: '' })
+      })
+    }
+    set('tech', value)
+    setAddingTech(false)
+    setNewTech('')
+    toast('Teknisi ditambahkan')
+  }
 
   const matTotal = materials.reduce(
     (a, m) => a + (db.products.find((p) => p.id === m.pid)?.price ?? 0) * num(m.qty),
@@ -536,13 +563,17 @@ function JobForm({ job }: { job?: Job }) {
                   setE((prev) => ({ ...prev, custId: id, address: c?.address ?? prev.address }))
                 }}
               >
-                {db.customers
-                  .filter((c) => c.id !== 'c0')
-                  .map((c) => (
+                {(() => {
+                  // "Pelanggan Umum" (c0) disembunyikan selama masih ada pelanggan
+                  // sungguhan; kalau tidak ada, tetap dipakai sebagai pilihan.
+                  const list = db.customers.filter((c) => c.id !== 'c0')
+                  const opts = list.length ? list : db.customers
+                  return opts.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
-                  ))}
+                  ))
+                })()}
               </select>
               <button
                 type="button"
@@ -578,13 +609,57 @@ function JobForm({ job }: { job?: Job }) {
             />
           </Field>
           <Field label="Teknisi">
-            <select className="input" value={e.tech} onChange={(ev) => set('tech', ev.target.value)}>
-              {TECHS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+            {addingTech ? (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  className="input"
+                  autoFocus
+                  placeholder="Nama teknisi baru"
+                  value={newTech}
+                  onChange={(ev) => setNewTech(ev.target.value)}
+                  onKeyDown={(ev) => {
+                    if (ev.key === 'Enter') {
+                      ev.preventDefault()
+                      applyNewTech()
+                    }
+                  }}
+                />
+                <button type="button" className="btn" onClick={applyNewTech}>
+                  <Icon name="check" />
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    setAddingTech(false)
+                    setNewTech('')
+                  }}
+                >
+                  <Icon name="x" />
+                </button>
+              </div>
+            ) : (
+              <select
+                className="input"
+                value={e.tech}
+                onChange={(ev) => {
+                  if (ev.target.value === NEW_TECH) {
+                    setAddingTech(true)
+                    setNewTech('')
+                    return
+                  }
+                  set('tech', ev.target.value)
+                }}
+              >
+                {db.technicians.length ? null : <option value="">— belum ada teknisi —</option>}
+                {db.technicians.map((t) => (
+                  <option key={t.id} value={t.name}>
+                    {t.name}
+                  </option>
+                ))}
+                <option value={NEW_TECH}>+ Tambah teknisi baru…</option>
+              </select>
+            )}
           </Field>
           <Field label="Status Pekerjaan">
             <select className="input" value={e.status} onChange={(ev) => set('status', ev.target.value)}>

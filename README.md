@@ -132,7 +132,7 @@ scripts/serve-legacy.cjs  server statis untuk membuka legacy/ di browser
 ## Halaman (route)
 
 `/dashboard` · `/kasir` · `/transaksi` · `/inventory` · `/kategori` · `/supplier` · `/pembelian` ·
-`/instalasi` · `/pelanggan` · `/piutang` · `/laporan` · `/pengaturan`
+`/instalasi` · `/teknisi` · `/pelanggan` · `/piutang` · `/laporan` · `/pengaturan`
 
 ## Yang perlu diisi manual
 
@@ -155,6 +155,37 @@ Semua data masih **data demo fiktif** (sama seperti HTML asli):
   struktur DOM, class, dan nilai computed style per elemen.
 - CSS aplikasi sengaja **tidak** dibungkus `@layer` (sama seperti file asli), supaya utility
   class Tailwind tidak menimpa class kustom seperti `grid` / `block`.
+
+## Penambahan (v11) — teknisi, nota pemasangan PDF & tipe harga grosir
+
+**Daftar Teknisi (`/teknisi`)**
+- Tabel baru `technicians` (Supabase) menyimpan **nama + nomor telepon** teknisi installer.
+  Tambah, ubah, dan hapus lewat halaman **Daftar Teknisi** (bukan di Pengaturan, supaya pengaturan toko
+  tetap fokus).
+- Form **Jasa Instalasi** memilih teknisi dari daftar ini. Opsi *"+ Tambah teknisi baru…"* menyimpan nama
+  baru langsung ke daftar, jadi teknisi baru bisa dibuat sambil mengisi pekerjaan.
+- Menghapus teknisi tidak mengubah riwayat: nama tetap tersimpan di `jobs.tech`.
+- Nomor telepon teknisi ikut tercetak di nota pemasangan.
+
+**Nota pemasangan CCTV (PDF A5)**
+- Tombol **Cetak Nota** di detail pekerjaan membuka `/api/nota/<id>` — **PDF A5 asli**, bukan
+  `window.print()`. Hasilnya bersih: tanpa header/footer browser (tanggal, URL, nomor halaman),
+  ukuran kertas pas, dan bisa langsung disimpan atau dikirim ke pelanggan.
+- Isi nota: kop toko + logo, nomor pekerjaan, data pelanggan, jenis & jadwal, teknisi + telepon,
+  rincian material, jasa/transport/diskon, total, dibayar, sisa tagihan, catatan survey, dan blok
+  tanda tangan penerima & teknisi.
+- Generator ada di `lib/invoicePdf.ts` (paket `pdf-lib`). Logo bawaan `public/logo.png` dipakai bila
+  toko belum mengunggah logo sendiri; logo unggahan (`settings.logo`) didahulukan.
+- Tanggal di PDF diformat ke zona **Asia/Jakarta**, jadi tidak bergeser walau server berjalan di UTC.
+
+**Tipe harga "Grosir"**
+- Tipe harga yang dulu bernama **"Teknisi"** kini **"Grosir"** — supaya tidak tertukar dengan nama
+  teknisi installer. Label ini dipakai di Pelanggan, Kasir, Produk, Struk, dan Laporan.
+- Nilai lama (`price_type = 'Teknisi'`/`'Rekanan'`) tetap terbaca dan otomatis dianggap `Grosir`;
+  skema menyertakan `update` idempotent untuk migrasi baris lama. Kolom produk tetap `price_tech`.
+
+> Jalankan `SUPABASE_ACCESS_TOKEN=sbp_xxx npm run db:push` sekali supaya tabel `technicians` dibuat.
+> Bila tabelnya belum ada, aplikasi memakai daftar teknisi bawaan dan tulisan ke tabel ini dilewati.
 
 ## Penambahan (v10) — kelola kategori
 

@@ -55,10 +55,10 @@ export function Receipt({ sale, paper }: { sale: Sale; paper: string }) {
         <span>Pelanggan</span>
         <span>{cu?.name}</span>
       </div>
-      {sale.priceType === 'Teknisi' ? (
+      {sale.priceType === 'Grosir' ? (
         <div className="rw">
           <span>Harga</span>
-          <span>Teknisi</span>
+          <span>Grosir</span>
         </div>
       ) : null}
       <hr />

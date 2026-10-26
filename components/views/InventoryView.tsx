@@ -113,7 +113,7 @@ export default function InventoryView() {
         value: (
           <>
             <b>{rp(p.price)}</b>
-            <div className="small muted">Teknisi {rp(p.priceTech)}</div>
+            <div className="small muted">Grosir {rp(p.priceGrosir)}</div>
           </>
         ),
       },
@@ -233,7 +233,7 @@ function ProductDetail({ product }: { product: Product }) {
   const { close } = useDrawer()
   const [s, c] = stockStatus(product)
   const margin = product.price - product.cost
-  const marginTech = product.priceTech - product.cost
+  const marginTech = product.priceGrosir - product.cost
 
   const log = db.stockLog
     .filter((l) => l.pid === product.id)
@@ -251,14 +251,14 @@ function ProductDetail({ product }: { product: Product }) {
             <span>margin {Math.round((margin / product.price) * 100)}%</span>
           </div>
           <div className="price-cell tech">
-            <small>Teknisi</small>
-            <b>{rp(product.priceTech)}</b>
-            <span>margin {Math.round((marginTech / product.priceTech) * 100)}%</span>
+            <small>Grosir</small>
+            <b>{rp(product.priceGrosir)}</b>
+            <span>margin {Math.round((marginTech / product.priceGrosir) * 100)}%</span>
           </div>
         </div>
         <div className="sub" style={{ marginTop: 8 }}>
           <span className="badge">{s}</span>
-          <span>Selisih teknisi {rp(product.price - product.priceTech)}</span>
+          <span>Selisih grosir {rp(product.price - product.priceGrosir)}</span>
         </div>
       </section>
 
@@ -349,7 +349,7 @@ function ProductForm({ product }: { product?: Product }) {
     brand: product?.brand ?? '',
     cost: product ? String(product.cost) : '',
     price: product ? String(product.price) : '',
-    priceTech: product ? String(product.priceTech) : '',
+    priceGrosir: product ? String(product.priceGrosir) : '',
     stock: product ? String(product.stock) : '0',
     min: product ? String(product.min) : String(db.settings.defaultMin),
   })
@@ -364,7 +364,7 @@ function ProductForm({ product }: { product?: Product }) {
       name: !e.name.trim(),
       cost: num(e.cost) < 1,
       price: num(e.price) < 1,
-      priceTech: num(e.priceTech) < 1,
+      priceGrosir: num(e.priceGrosir) < 1,
       min: num(e.min) < 0,
       stock: num(e.stock) < 0,
     }
@@ -381,7 +381,7 @@ function ProductForm({ product }: { product?: Product }) {
       cat: e.cat,
       cost: num(e.cost),
       price: num(e.price),
-      priceTech: num(e.priceTech),
+      priceGrosir: num(e.priceGrosir),
       stock: num(e.stock),
       min: num(e.min),
     }
@@ -395,11 +395,11 @@ function ProductForm({ product }: { product?: Product }) {
       toast('Harga jual lebih kecil dari harga modal', 'err')
       return
     }
-    if (d.priceTech < d.cost) {
+    if (d.priceGrosir < d.cost) {
       toast('Harga teknisi lebih kecil dari harga modal', 'err')
       return
     }
-    if (d.priceTech > d.price) {
+    if (d.priceGrosir > d.price) {
       toast('Harga teknisi tidak boleh lebih tinggi dari harga pelanggan', 'err')
       return
     }
@@ -489,13 +489,13 @@ function ProductForm({ product }: { product?: Product }) {
             onChange={(ev) => set('price', ev.target.value)}
           />
         </Field>
-        <Field label="Harga Teknisi (Rp) *">
+        <Field label="Harga Grosir (Rp) *">
           <input
-            className={`input ${err.priceTech ? 'err' : ''}`}
+            className={`input ${err.priceGrosir ? 'err' : ''}`}
             type="number"
             min={1}
-            value={e.priceTech}
-            onChange={(ev) => set('priceTech', ev.target.value)}
+            value={e.priceGrosir}
+            onChange={(ev) => set('priceGrosir', ev.target.value)}
           />
         </Field>
         <Field label={product ? 'Stok (penyesuaian manual)' : 'Stok Awal'}>

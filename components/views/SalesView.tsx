@@ -76,8 +76,8 @@ export default function SalesView() {
     { label: 'Pelanggan', value: (
       <>
         {db.customers.find((c) => c.id === s.custId)?.name ?? '-'}
-        {s.priceType === 'Teknisi' ? (
-          <div className="small muted">Harga teknisi</div>
+        {s.priceType === 'Grosir' ? (
+          <div className="small muted">Harga rekanan</div>
         ) : null}
       </>
     ) },

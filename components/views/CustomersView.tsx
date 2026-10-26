@@ -95,11 +95,7 @@ export default function CustomersView() {
         value: (
           <>
             <b>{c.name}</b>
-            {c.priceType === 'Teknisi' ? (
-              <span className="badge b" style={{ marginLeft: 6 }}>
-                Teknisi
-              </span>
-            ) : null}
+            {c.priceType === 'Grosir' ? <div className="small muted">Harga grosir</div> : null}
           </>
         ),
         cls: 'wrap',
@@ -220,13 +216,7 @@ function CustomerDetail({ customer, onDelete }: { customer: Customer; onDelete: 
           </div>
           <div className="dw-row">
             <span className="muted">Tipe Harga</span>
-            <b>
-              {customer.priceType === 'Teknisi' ? (
-                <span className="badge b">Teknisi</span>
-              ) : (
-                <span className="badge">Pelanggan</span>
-              )}
-            </b>
+            <b>{customer.priceType === 'Grosir' ? 'Harga grosir' : 'Harga pelanggan'}</b>
           </div>
           <div className="dw-row">
             <span className="muted">Tempo Default</span>
@@ -404,10 +394,10 @@ function CustomerForm({ customer }: { customer?: Customer }) {
           <select
             className="input"
             value={e.priceType}
-            onChange={(ev) => setE((p) => ({ ...p, priceType: ev.target.value as 'Pelanggan' | 'Teknisi' }))}
+            onChange={(ev) => setE((p) => ({ ...p, priceType: ev.target.value as 'Pelanggan' | 'Grosir' }))}
           >
             <option value="Pelanggan">Pelanggan umum (harga retail)</option>
-            <option value="Teknisi">Teknisi / rekanan (harga khusus)</option>
+            <option value="Grosir">Grosir (harga khusus)</option>
           </select>
         </Field>
       </form>

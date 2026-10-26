@@ -104,11 +104,7 @@ export default function ReceivablesView() {
         value: (
           <>
             <b>{g.name}</b>
-            {cust?.priceType === 'Teknisi' ? (
-              <span className="badge b" style={{ marginLeft: 6 }}>
-                Teknisi
-              </span>
-            ) : null}
+            {cust?.priceType === 'Grosir' ? <div className="small muted">Harga grosir</div> : null}
             <div className="small muted">{g.phone}</div>
           </>
         ),

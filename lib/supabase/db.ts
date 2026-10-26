@@ -11,8 +11,9 @@ import type {
   Settings,
   StockLog,
   Supplier,
+  Technician,
 } from '../types'
-import { DEFAULT_CATEGORIES } from '../types'
+import { DEFAULT_CATEGORIES, DEFAULT_TECHS } from '../types'
 
 /**
  * Lapisan pemetaan antara bentuk DB aplikasi (camelCase, dipakai semua view)
@@ -33,7 +34,9 @@ const text = (v: unknown) => (v == null ? '' : String(v))
 const optText = (v: unknown) => (v == null ? undefined : String(v))
 const optNum = (v: unknown) => (v == null ? undefined : num(v))
 const rows = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : [])
-const priceType = (v: unknown): PriceType => (v === 'Teknisi' ? 'Teknisi' : 'Pelanggan')
+// Nilai lama 'Teknisi' masih diterima supaya baris yang belum termigrasi
+// tidak salah baca sebagai 'Pelanggan'.
+const priceType = (v: unknown): PriceType => (v === 'Grosir' || v === 'Teknisi' ? 'Grosir' : 'Pelanggan')
 
 export const DEFAULT_SETTINGS: Settings = {
   storeName: 'Sentral CCTV',
@@ -52,6 +55,7 @@ export const DEFAULT_SETTINGS: Settings = {
 export function emptyDb(): DB {
   return {
     categories: [],
+    technicians: [],
     products: [],
     customers: [],
     suppliers: [],
@@ -69,6 +73,14 @@ const categoryRow = (c: Category): Row => ({ id: c.id, name: c.name })
 
 const categoryFrom = (r: Row): Category => ({ id: text(r.id), name: text(r.name) })
 
+const technicianRow = (t: Technician): Row => ({ id: t.id, name: t.name, phone: t.phone })
+
+const technicianFrom = (r: Row): Technician => ({
+  id: text(r.id),
+  name: text(r.name),
+  phone: text(r.phone),
+})
+
 const productRow = (p: Product): Row => ({
   id: p.id,
   sku: p.sku,
@@ -77,7 +89,7 @@ const productRow = (p: Product): Row => ({
   brand: p.brand,
   cost: p.cost,
   price: p.price,
-  price_tech: p.priceTech,
+  price_tech: p.priceGrosir,
   stock: p.stock,
   min: p.min,
   unit: p.unit,
@@ -91,7 +103,7 @@ const productFrom = (r: Row): Product => ({
   brand: text(r.brand),
   cost: num(r.cost),
   price: num(r.price),
-  priceTech: num(r.price_tech),
+  priceGrosir: num(r.price_tech),
   stock: num(r.stock),
   min: num(r.min),
   unit: text(r.unit) || 'pcs',
@@ -288,9 +300,10 @@ const countersFrom = (r: Row | undefined): DB['seq'] => ({
 const ID_TABLES = ['products', 'customers', 'suppliers', 'purchases', 'sales', 'jobs'] as const
 
 export async function fetchDb(sb: SupabaseClient): Promise<DB> {
-  const [categories, products, customers, suppliers, purchases, sales, jobs, stockLog, settings, counters] =
+  const [categories, technicians, products, customers, suppliers, purchases, sales, jobs, stockLog, settings, counters] =
     await Promise.all([
       sb.from('categories').select('*').order('sort_order', { ascending: true }),
+      sb.from('technicians').select('*').order('sort_order', { ascending: true }),
       ...ID_TABLES.map((t) => sb.from(t).select('*').order('sort_order', { ascending: true })),
       sb.from('stock_log').select('*').order('id', { ascending: true }),
       sb.from('settings').select('*').eq('id', 1).maybeSingle(),
@@ -306,6 +319,9 @@ export async function fetchDb(sb: SupabaseClient): Promise<DB> {
   // kategori bawaan + kategori yang sudah dipakai produk lama.
   if (categories.error && categories.error.code !== '42P01') throw new Error(categories.error.message)
 
+  // Sama untuk technicians — daftar teknisi bawaan sampai tabelnya tersedia.
+  if (technicians.error && technicians.error.code !== '42P01') throw new Error(technicians.error.message)
+
   const productList = (products.data ?? []).map(productFrom)
   const categoryList = (categories.data ?? []).map(categoryFrom)
   if (!categoryList.length) {
@@ -316,8 +332,16 @@ export async function fetchDb(sb: SupabaseClient): Promise<DB> {
     categoryList.push(...names.map((name, i) => ({ id: `cat-${i + 1}`, name })))
   }
 
+  // Tabel technicians yang kosong berarti teknisi memang sengaja dikosongkan
+  // oleh pemilik toko — jangan diisi ulang dengan nama demo.
+  const technicianList = (technicians.data ?? []).map(technicianFrom)
+  if (technicians.error?.code === '42P01') {
+    technicianList.push(...DEFAULT_TECHS.map((name, i) => ({ id: `tech-${i + 1}`, name, phone: '' })))
+  }
+
   return {
     categories: categoryList,
+    technicians: technicianList,
     products: productList,
     customers: (customers.data ?? []).map(customerFrom),
     suppliers: (suppliers.data ?? []).map(supplierFrom),
@@ -350,6 +374,19 @@ async function replaceRows(sb: SupabaseClient, table: string, list: Row[]) {
   if (error) throw new Error(`${table}: ${error.message}`)
 }
 
+/**
+ * Sama seperti replaceRows, tapi diam-diam dilewati bila tabelnya belum ada
+ * (skema belum di-push). Dipakai untuk tabel opsional seperti technicians.
+ */
+async function replaceOptionalRows(sb: SupabaseClient, table: string, list: Row[]) {
+  try {
+    await replaceRows(sb, table, list)
+  } catch (err) {
+    const code = /42P01|does not exist/i.test(err instanceof Error ? err.message : String(err))
+    if (!code) throw err
+  }
+}
+
 async function replaceStockLog(sb: SupabaseClient, list: StockLog[]) {
   const { error: delError } = await sb.from('stock_log').delete().gt('id', 0)
   if (delError) throw new Error(`stock_log: ${delError.message}`)
@@ -367,6 +404,8 @@ const changed = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify
 export async function saveDb(sb: SupabaseClient, prev: DB, next: DB): Promise<void> {
   if (changed(prev.categories, next.categories))
     await replaceRows(sb, 'categories', next.categories.map(categoryRow))
+  if (changed(prev.technicians, next.technicians))
+    await replaceOptionalRows(sb, 'technicians', next.technicians.map(technicianRow))
   if (changed(prev.products, next.products)) await replaceRows(sb, 'products', next.products.map(productRow))
   if (changed(prev.customers, next.customers))
     await replaceRows(sb, 'customers', next.customers.map(customerRow))

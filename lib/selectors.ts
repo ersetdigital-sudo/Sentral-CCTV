@@ -7,7 +7,7 @@ export const supplierOf = (db: DB, id?: string) => db.suppliers.find((s) => s.id
 
 /** Harga produk sesuai tipe harga (pelanggan umum / teknisi). */
 export const priceFor = (p: Product, type?: PriceType) =>
-  type === 'Teknisi' ? p.priceTech || p.price : p.price
+  type === 'Grosir' ? p.priceGrosir || p.price : p.price
 
 /** Status stok: [label, warna badge] */
 export const stockStatus = (p: Product): [string, string] =>

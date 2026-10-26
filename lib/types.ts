@@ -1,10 +1,16 @@
-export type PriceType = 'Pelanggan' | 'Teknisi'
+export type PriceType = 'Pelanggan' | 'Grosir'
 
-export const PRICE_TYPES: PriceType[] = ['Pelanggan', 'Teknisi']
+export const PRICE_TYPES: PriceType[] = ['Pelanggan', 'Grosir']
 
 export type Category = {
   id: string
   name: string
+}
+
+export type Technician = {
+  id: string
+  name: string
+  phone: string
 }
 
 export type Product = {
@@ -17,7 +23,7 @@ export type Product = {
   /** Harga jual untuk pelanggan umum (retail). */
   price: number
   /** Harga jual khusus teknisi / rekanan. */
-  priceTech: number
+  priceGrosir: number
   stock: number
   min: number
   unit: string
@@ -136,6 +142,7 @@ export type Settings = {
 
 export type DB = {
   categories: Category[]
+  technicians: Technician[]
   products: Product[]
   customers: Customer[]
   suppliers: Supplier[]
@@ -170,7 +177,8 @@ export const JOB_STATUS = [
   'Dibatalkan',
 ]
 
-export const TECHS = ['Andi Saputra', 'Budi Hartono', 'Dimas Pratama', 'Eko Wijaya']
+/** Nama teknisi bawaan — dipakai saat tabel technicians belum tersedia. */
+export const DEFAULT_TECHS = ['Andi Saputra', 'Budi Hartono', 'Dimas Pratama', 'Eko Wijaya']
 
 export const PAY_METHODS = ['Tunai', 'Transfer Bank', 'QRIS', 'Debit']
 
