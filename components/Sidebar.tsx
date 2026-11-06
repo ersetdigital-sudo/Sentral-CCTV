@@ -30,7 +30,6 @@ export function Sidebar() {
           </div>
         ))}
       </nav>
-      <div className="side-foot">Mode demo · data tersimpan di browser</div>
     </aside>
   )
 }
