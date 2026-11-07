@@ -3187,3 +3187,146 @@ table.tbl {
     border-radius: 14px;
   }
 }
+
+/* ===== Saldo kas ===== */
+.cash-card {
+  margin: 16px 0;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  background:
+    radial-gradient(120% 180% at 100% 0%, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0) 55%),
+    linear-gradient(135deg, #ffffff 0%, #f8fbff 60%, #eef4ff 100%);
+  border-color: #dbe7ff;
+}
+.cash-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1 1 340px;
+  min-width: 0;
+}
+.cash-ic {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: linear-gradient(135deg, #3b82f6, #1e3a8a);
+  color: #fff;
+  box-shadow: 0 10px 22px -10px rgba(37, 99, 235, 0.65);
+}
+.cash-ic .ic {
+  width: 24px;
+  height: 24px;
+}
+.cash-info {
+  min-width: 0;
+}
+.cash-lbl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.cash-val {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 3px 0 2px;
+  color: var(--navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.cash-val.neg {
+  color: var(--danger);
+}
+.cash-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.cash-chips {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.cash-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.cash-chip .ic {
+  width: 14px;
+  height: 14px;
+}
+.cash-chip b {
+  font-size: 12.5px;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+.cash-chip.in {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.cash-chip.in .ic {
+  color: var(--success);
+}
+.cash-chip.out {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+.cash-chip.out .ic {
+  color: #ea580c;
+}
+.cash-chip.op {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+.cash-chip.op .ic {
+  color: #7c3aed;
+}
+.cash-bar {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.cash-bar .prog {
+  flex: 1;
+}
+@media (max-width: 640px) {
+  .cash-card {
+    padding: 16px;
+    gap: 14px;
+  }
+  .cash-val {
+    font-size: 26px;
+  }
+  .cash-chips {
+    width: 100%;
+    margin-left: 0;
+  }
+  .cash-chip {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}

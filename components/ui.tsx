@@ -145,6 +145,62 @@ export function Progress({
   )
 }
 
+/* ---------- Saldo kas ---------- */
+export function CashCard({
+  balance,
+  totalIn,
+  purchasesOut,
+  expensesOut = 0,
+  badge = 'Real-time',
+  note = 'Semua pemasukan (penjualan, piutang, instalasi) − belanja − biaya operasional',
+}: {
+  balance: number
+  totalIn: number
+  purchasesOut: number
+  expensesOut?: number
+  badge?: string
+  note?: string
+}) {
+  const totalOut = purchasesOut + expensesOut
+  const used = totalIn > 0 ? Math.min(100, Math.round((totalOut / totalIn) * 100)) : 0
+  const negative = balance < 0
+  return (
+    <div className="card cash-card">
+      <div className="cash-main">
+        <span className="cash-ic">
+          <Icon name="wallet" />
+        </span>
+        <div className="cash-info">
+          <div className="cash-lbl">
+            Saldo Kas <span className="badge b">{badge}</span>
+          </div>
+          <div className={`cash-val ${negative ? 'neg' : ''}`}>
+            <CountUp value={balance} money />
+          </div>
+          <div className="cash-sub">{note}</div>
+        </div>
+      </div>
+      <div className="cash-chips">
+        <span className="cash-chip in">
+          <Icon name="arrowDown" /> Uang masuk <b>{rp(totalIn)}</b>
+        </span>
+        <span className="cash-chip out">
+          <Icon name="arrowUp" /> Belanja <b>{rp(purchasesOut)}</b>
+        </span>
+        <span className="cash-chip op">
+          <Icon name="receipt" /> Operasional <b>{rp(expensesOut)}</b>
+        </span>
+      </div>
+      {totalIn > 0 ? (
+        <div className="cash-bar">
+          <Progress value={totalOut} max={totalIn} tone="o" small />
+          <span>{negative ? 'Pengeluaran melebihi pemasukan' : `${used}% pemasukan terpakai`}</span>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 /* ---------- Catatan ---------- */
 export function Note({
   children,

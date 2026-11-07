@@ -3,6 +3,7 @@ import type {
   Category,
   Customer,
   DB,
+  Expense,
   Job,
   PriceType,
   Product,
@@ -38,6 +39,13 @@ const rows = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : [])
 // tidak salah baca sebagai 'Pelanggan'.
 const priceType = (v: unknown): PriceType => (v === 'Grosir' || v === 'Teknisi' ? 'Grosir' : 'Pelanggan')
 
+/** Tabel opsional yang belum di-push: Postgres `42P01` atau PostgREST `PGRST205`. */
+const isMissingTable = (err: { code?: string; message?: string } | null | undefined) =>
+  !!err &&
+  (err.code === '42P01' ||
+    err.code === 'PGRST205' ||
+    /could not find the table|schema cache|does not exist/i.test(err.message ?? ''))
+
 export const DEFAULT_SETTINGS: Settings = {
   storeName: 'Sentral CCTV',
   address: '',
@@ -60,6 +68,7 @@ export function emptyDb(): DB {
     customers: [],
     suppliers: [],
     purchases: [],
+    expenses: [],
     sales: [],
     jobs: [],
     stockLog: [],
@@ -163,6 +172,22 @@ const purchaseFrom = (r: Row): Purchase => ({
   items: rows<Purchase['items'][number]>(r.items),
   pay: text(r.pay) || 'Lunas',
   received: Boolean(r.received),
+})
+
+const expenseRow = (e: Expense): Row => ({
+  id: e.id,
+  date: e.date,
+  category: e.category,
+  note: e.note,
+  amount: e.amount,
+})
+
+const expenseFrom = (r: Row): Expense => ({
+  id: text(r.id),
+  date: text(r.date),
+  category: text(r.category) || 'Lain-lain',
+  note: text(r.note),
+  amount: num(r.amount),
 })
 
 const saleRow = (s: Sale): Row => ({
@@ -300,15 +325,28 @@ const countersFrom = (r: Row | undefined): DB['seq'] => ({
 const ID_TABLES = ['products', 'customers', 'suppliers', 'purchases', 'sales', 'jobs'] as const
 
 export async function fetchDb(sb: SupabaseClient): Promise<DB> {
-  const [categories, technicians, products, customers, suppliers, purchases, sales, jobs, stockLog, settings, counters] =
-    await Promise.all([
-      sb.from('categories').select('*').order('sort_order', { ascending: true }),
-      sb.from('technicians').select('*').order('sort_order', { ascending: true }),
-      ...ID_TABLES.map((t) => sb.from(t).select('*').order('sort_order', { ascending: true })),
-      sb.from('stock_log').select('*').order('id', { ascending: true }),
-      sb.from('settings').select('*').eq('id', 1).maybeSingle(),
-      sb.from('counters').select('*').eq('id', 1).maybeSingle(),
-    ])
+  const [
+    categories,
+    technicians,
+    products,
+    customers,
+    suppliers,
+    purchases,
+    sales,
+    jobs,
+    stockLog,
+    expenses,
+    settings,
+    counters,
+  ] = await Promise.all([
+    sb.from('categories').select('*').order('sort_order', { ascending: true }),
+    sb.from('technicians').select('*').order('sort_order', { ascending: true }),
+    ...ID_TABLES.map((t) => sb.from(t).select('*').order('sort_order', { ascending: true })),
+    sb.from('stock_log').select('*').order('id', { ascending: true }),
+    sb.from('expenses').select('*').order('sort_order', { ascending: true }),
+    sb.from('settings').select('*').eq('id', 1).maybeSingle(),
+    sb.from('counters').select('*').eq('id', 1).maybeSingle(),
+  ])
 
   const failed = [products, customers, suppliers, purchases, sales, jobs, stockLog, settings, counters].find(
     (r) => r.error,
@@ -317,10 +355,13 @@ export async function fetchDb(sb: SupabaseClient): Promise<DB> {
 
   // Tabel categories bisa belum ada bila skema belum di-push ulang: pakai
   // kategori bawaan + kategori yang sudah dipakai produk lama.
-  if (categories.error && categories.error.code !== '42P01') throw new Error(categories.error.message)
+  if (categories.error && !isMissingTable(categories.error)) throw new Error(categories.error.message)
 
   // Sama untuk technicians — daftar teknisi bawaan sampai tabelnya tersedia.
-  if (technicians.error && technicians.error.code !== '42P01') throw new Error(technicians.error.message)
+  if (technicians.error && !isMissingTable(technicians.error)) throw new Error(technicians.error.message)
+
+  // Biaya operasional opsional: halaman tetap jalan sebelum tabel expenses di-push.
+  if (expenses.error && !isMissingTable(expenses.error)) throw new Error(expenses.error.message)
 
   const productList = (products.data ?? []).map(productFrom)
   const categoryList = (categories.data ?? []).map(categoryFrom)
@@ -346,6 +387,7 @@ export async function fetchDb(sb: SupabaseClient): Promise<DB> {
     customers: (customers.data ?? []).map(customerFrom),
     suppliers: (suppliers.data ?? []).map(supplierFrom),
     purchases: (purchases.data ?? []).map(purchaseFrom),
+    expenses: (expenses.data ?? []).map(expenseFrom),
     sales: (sales.data ?? []).map(saleFrom),
     jobs: (jobs.data ?? []).map(jobFrom),
     stockLog: (stockLog.data ?? []).map(stockLogFrom),
@@ -382,8 +424,8 @@ async function replaceOptionalRows(sb: SupabaseClient, table: string, list: Row[
   try {
     await replaceRows(sb, table, list)
   } catch (err) {
-    const code = /42P01|does not exist/i.test(err instanceof Error ? err.message : String(err))
-    if (!code) throw err
+    const message = err instanceof Error ? err.message : String(err)
+    if (!isMissingTable({ message })) throw err
   }
 }
 
@@ -413,6 +455,8 @@ export async function saveDb(sb: SupabaseClient, prev: DB, next: DB): Promise<vo
     await replaceRows(sb, 'suppliers', next.suppliers.map(supplierRow))
   if (changed(prev.purchases, next.purchases))
     await replaceRows(sb, 'purchases', next.purchases.map(purchaseRow))
+  if (changed(prev.expenses, next.expenses))
+    await replaceOptionalRows(sb, 'expenses', next.expenses.map(expenseRow))
   if (changed(prev.sales, next.sales)) await replaceRows(sb, 'sales', next.sales.map(saleRow))
   if (changed(prev.jobs, next.jobs)) await replaceRows(sb, 'jobs', next.jobs.map(jobRow))
   if (changed(prev.stockLog, next.stockLog)) await replaceStockLog(sb, next.stockLog)

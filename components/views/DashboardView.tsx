@@ -3,9 +3,9 @@
 import { useRouter } from 'next/navigation'
 import { Icon } from '@/components/Icon'
 import { Spark, StackChart } from '@/components/charts'
-import { Badge, CountUp, DataTable, JobBadge, PageHead, PayBadge, type Cell } from '@/components/ui'
+import { Badge, CashCard, CountUp, DataTable, JobBadge, PageHead, PayBadge, type Cell } from '@/components/ui'
 import { useStore } from '@/lib/store'
-import { custDebt, topProducts } from '@/lib/selectors'
+import { cashFlow, custDebt, topProducts } from '@/lib/selectors'
 import { dayKey, daysAgo, fDateTime, fDay, rp } from '@/lib/format'
 import type { IconName } from '@/lib/icons'
 import { JOB_STATUS } from '@/lib/types'
@@ -43,6 +43,7 @@ export default function DashboardView() {
     ['Terjadwal', 'Dalam Pengerjaan', 'Survey Lokasi', 'Menunggu Konfirmasi'].includes(j.status),
   )
   const debt = db.customers.reduce((a, c) => a + custDebt(db, c.id), 0)
+  const cash = cashFlow(db)
 
   const days: { label: string; a: number; b: number }[] = []
   for (let d = 6; d >= 0; d--) {
@@ -162,6 +163,13 @@ export default function DashboardView() {
           </div>
         </div>
       </div>
+
+      <CashCard
+        balance={cash.balance}
+        totalIn={cash.totalIn}
+        purchasesOut={cash.purchasesOut}
+        expensesOut={cash.expensesOut}
+      />
 
       <div className="grid dash-row" style={{ marginTop: 16 }}>
         <div className="card">

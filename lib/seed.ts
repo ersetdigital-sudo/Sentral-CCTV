@@ -465,6 +465,7 @@ export function seed(): DB {
     customers,
     suppliers,
     purchases,
+    expenses: [],
     sales,
     jobs,
     stockLog,

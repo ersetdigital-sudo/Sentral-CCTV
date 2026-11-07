@@ -93,6 +93,14 @@ export type Purchase = {
   received: boolean
 }
 
+export type Expense = {
+  id: string
+  date: string
+  category: string
+  note: string
+  amount: number
+}
+
 export type JobMaterial = { pid: string; qty: number }
 
 export type JobHistory = { date: string; status: string; note: string }
@@ -147,6 +155,7 @@ export type DB = {
   customers: Customer[]
   suppliers: Supplier[]
   purchases: Purchase[]
+  expenses: Expense[]
   sales: Sale[]
   jobs: Job[]
   stockLog: StockLog[]
@@ -181,6 +190,20 @@ export const JOB_STATUS = [
 export const DEFAULT_TECHS = ['Andi Saputra', 'Budi Hartono', 'Dimas Pratama', 'Eko Wijaya']
 
 export const PAY_METHODS = ['Tunai', 'Transfer Bank', 'QRIS', 'Debit']
+
+/** Pilihan kategori biaya operasional toko. */
+export const EXPENSE_CATEGORIES = [
+  'Listrik',
+  'Air',
+  'Internet',
+  'Sewa',
+  'Gaji',
+  'Transport',
+  'Perawatan',
+  'ATK',
+  'Marketing',
+  'Lain-lain',
+]
 
 /** Pilihan tempo (jatuh tempo) saat transaksi. */
 export const TEMPO_PRESETS = [7, 14, 30]

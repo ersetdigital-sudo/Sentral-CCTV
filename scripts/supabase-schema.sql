@@ -129,6 +129,15 @@ create table if not exists public.purchases (
   received boolean not null default false
 );
 
+create table if not exists public.expenses (
+  id text primary key,
+  sort_order integer not null default 0,
+  date text not null default '',
+  category text not null default 'Lain-lain',
+  note text not null default '',
+  amount bigint not null default 0
+);
+
 create table if not exists public.sales (
   id text primary key,
   sort_order integer not null default 0,
@@ -206,7 +215,7 @@ create table if not exists public.counters (
 do $$
 declare t text;
 begin
-  foreach t in array array['categories','technicians','products','customers','suppliers','purchases','sales','jobs','stock_log','settings','counters']
+  foreach t in array array['categories','technicians','products','customers','suppliers','purchases','expenses','sales','jobs','stock_log','settings','counters']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists %I on public.%I', t || '_admin_all', t);
@@ -222,7 +231,7 @@ end $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['categories','technicians','products','customers','suppliers','purchases','sales','jobs']
+  foreach t in array array['categories','technicians','products','customers','suppliers','purchases','expenses','sales','jobs']
   loop
     execute format('alter table public.%I add column if not exists sort_order integer not null default 0', t);
   end loop;
@@ -232,4 +241,5 @@ create index if not exists sales_date_idx on public.sales (date desc);
 create index if not exists sales_cust_idx on public.sales (cust_id);
 create index if not exists jobs_cust_idx on public.jobs (cust_id);
 create index if not exists purchases_supplier_idx on public.purchases (supplier_id);
+create index if not exists expenses_date_idx on public.expenses (date desc);
 create index if not exists stock_log_pid_idx on public.stock_log (pid);

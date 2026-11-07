@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Icon } from '@/components/Icon'
-import { DataTable, Field, PageHead, PayBadge, SearchBox, type Cell } from '@/components/ui'
+import { DataTable, Field, Note, PageHead, SearchBox, type Cell } from '@/components/ui'
 import { ModalFoot, useModal } from '@/components/Modal'
 import { DrawerFoot, useDrawer } from '@/components/Drawer'
 import { useToast } from '@/components/Toast'
@@ -91,7 +91,6 @@ export default function PurchasesView() {
       cls: 'wrap small',
     },
     { label: 'Total', value: <b>{rp(purTotal(p))}</b>, align: 'r' },
-    { label: 'Pembayaran', value: <PayBadge status={p.pay} /> },
     {
       label: 'Penerimaan',
       value: p.received ? (
@@ -149,7 +148,6 @@ export default function PurchasesView() {
             'Supplier',
             'Barang',
             { label: 'Total', align: 'r' },
-            'Pembayaran',
             'Penerimaan',
             { label: 'Aksi', align: 'r' },
           ]}
@@ -197,7 +195,7 @@ function PurchaseDetail({ purchase, onDelete }: { purchase: Purchase; onDelete: 
         <div className="lbl">Total Pembelian</div>
         <div className="val">{rp(purTotal(p))}</div>
         <div className="sub">
-          <span className="badge">{p.pay}</span>
+          <span className="badge g">Lunas</span>
           <span>{p.received ? 'Barang diterima' : 'Belum diterima'}</span>
         </div>
       </div>
@@ -212,12 +210,6 @@ function PurchaseDetail({ purchase, onDelete }: { purchase: Purchase; onDelete: 
           <div className="dw-cell">
             <small>Supplier</small>
             <b>{db.suppliers.find((s) => s.id === p.supplierId)?.name ?? '-'}</b>
-          </div>
-          <div className="dw-cell">
-            <small>Status Pembayaran</small>
-            <b>
-              <PayBadge status={p.pay} />
-            </b>
           </div>
           <div className="dw-cell">
             <small>Status Penerimaan</small>
@@ -262,21 +254,6 @@ function PurchaseDetail({ purchase, onDelete }: { purchase: Purchase; onDelete: 
         <button className="btn danger" style={{ marginRight: 'auto' }} onClick={onDelete}>
           <Icon name="trash" /> Hapus
         </button>
-        {p.pay !== 'Lunas' ? (
-          <button
-            className="btn"
-            onClick={() => {
-              update((d) => {
-                const target = d.purchases.find((x) => x.id === p.id)
-                if (target) target.pay = 'Lunas'
-              })
-              setP({ ...p, pay: 'Lunas' })
-              toast('Pembelian ditandai lunas')
-            }}
-          >
-            Tandai Lunas
-          </button>
-        ) : null}
         {!p.received ? (
           <button className="btn success" onClick={receive}>
             <Icon name="check" /> Tandai Barang Diterima
@@ -300,7 +277,6 @@ function PurchaseForm() {
 
   const [sup, setSup] = useState('')
   const [date, setDate] = useState(isoDate(new Date()))
-  const [pay, setPay] = useState('Belum Lunas')
   const [recv, setRecv] = useState('0')
   const [lines, setLines] = useState<Line[]>([{ pid: db.products[0]?.id ?? '', qty: '1', cost: '' }])
 
@@ -334,7 +310,7 @@ function PurchaseForm() {
         date: new Date(date).toISOString(),
         supplierId: sup,
         items,
-        pay,
+        pay: 'Lunas',
         received: recv === '1',
       }
       if (p.received)
@@ -352,6 +328,9 @@ function PurchaseForm() {
   return (
     <>
       <form noValidate onSubmit={(ev) => ev.preventDefault()}>
+        <Note icon="info" style={{ marginBottom: 14 }}>
+          Pembelian langsung dicatat <b>Lunas</b>. Saldo kas otomatis terpotong saat pembelian disimpan.
+        </Note>
         <div className="form-grid">
           <Field label="Supplier *">
             <select className="input" value={sup} onChange={(e) => setSup(e.target.value)}>
@@ -364,12 +343,6 @@ function PurchaseForm() {
           </Field>
           <Field label="Tanggal *">
             <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </Field>
-          <Field label="Status Pembayaran">
-            <select className="input" value={pay} onChange={(e) => setPay(e.target.value)}>
-              <option value="Belum Lunas">Belum Lunas</option>
-              <option value="Lunas">Lunas</option>
-            </select>
           </Field>
           <Field label="Status Penerimaan">
             <select className="input" value={recv} onChange={(e) => setRecv(e.target.value)}>

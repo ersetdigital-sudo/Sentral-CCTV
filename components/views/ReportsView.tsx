@@ -4,11 +4,11 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Icon } from '@/components/Icon'
 import { BarChart } from '@/components/charts'
-import { DataTable, Note, PageHead, type Cell } from '@/components/ui'
+import { CashCard, DataTable, Note, PageHead, type Cell } from '@/components/ui'
 import { useToast } from '@/components/Toast'
 import { useStore } from '@/lib/store'
 import { daysAgo, downloadCSV, fDate, fDateTime, fDay, isoDate, rp } from '@/lib/format'
-import { jobTotal, topProducts } from '@/lib/selectors'
+import { cashFlow, jobTotal, topProducts } from '@/lib/selectors'
 
 export default function ReportsView() {
   const { db, ready } = useStore()
@@ -26,15 +26,22 @@ export default function ReportsView() {
     )
     const jasa = jobs.reduce((a, j) => a + j.service + j.transport - j.discount, 0)
     const beli = db.purchases.filter((p) => inR(p.date)).reduce((a, p) => a + p.items.reduce((b, i) => b + i.qty * i.cost, 0), 0)
+    const expenses = db.expenses.filter((e) => inR(e.date))
+    const biaya = expenses.reduce((a, e) => a + e.amount, 0)
+    const byCat = new Map<string, number>()
+    expenses.forEach((e) => byCat.set(e.category, (byCat.get(e.category) ?? 0) + e.amount))
+    const expenseByCat = [...byCat.entries()].sort((a, b) => b[1] - a[1])
     const days: { label: string; value: number }[] = []
     for (let d = new Date(from); isoDate(d) <= to && days.length < 62; d.setDate(d.getDate() + 1)) {
       const k = isoDate(d)
       days.push({ label: fDay(d), value: sales.filter((s) => isoDate(s.date) === k).reduce((a, s) => a + s.total, 0) })
     }
-    return { sales, omzet, modal, laba: omzet - modal, jasa, beli, days }
+    return { sales, omzet, modal, laba: omzet - modal, jasa, beli, expenses, biaya, expenseByCat, days }
   }, [db, from, to])
 
   if (!ready) return null
+
+  const cash = cashFlow(db)
 
   const unpaid = [
     ...db.sales
@@ -136,7 +143,13 @@ export default function ReportsView() {
               ['Modal Barang Terjual', report.modal],
               ['Estimasi Laba Kotor', report.laba],
               ['Pendapatan Jasa Instalasi', report.jasa],
-              ['Total Pembelian Barang', report.beli],
+              ['Total Pembelian Barang (periode)', report.beli],
+              ['Biaya Operasional (periode)', report.biaya],
+              ['Total Pengeluaran (periode)', report.beli + report.biaya],
+              ['Saldo Kas (semua waktu)', cash.balance],
+              ['Uang Masuk (semua waktu)', cash.totalIn],
+              ['Belanja Distributor (semua waktu)', cash.purchasesOut],
+              ['Biaya Operasional (semua waktu)', cash.expensesOut],
               ['Catatan', 'Estimasi dari data dummy, bukan laporan akuntansi final'],
             ])
             toast('File ringkasan diunduh')
@@ -145,6 +158,15 @@ export default function ReportsView() {
           <Icon name="download" /> Ekspor CSV Ringkasan
         </button>
       </div>
+
+      <CashCard
+        balance={cash.balance}
+        totalIn={cash.totalIn}
+        purchasesOut={cash.purchasesOut}
+        expensesOut={cash.expensesOut}
+        badge="Semua waktu"
+        note="Uang yang sudah diterima (penjualan, piutang, instalasi) − belanja − biaya operasional"
+      />
 
       <Note tone="warn" icon="alert" style={{ marginBottom: 16 }}>
         Laba yang ditampilkan adalah <b>estimasi</b> berdasarkan data dummy (harga jual − harga modal saat transaksi),
@@ -162,13 +184,45 @@ export default function ReportsView() {
             'var(--success)',
           )}
           {stat('Pendapatan Jasa', rp(report.jasa), 'Pekerjaan selesai')}
-          {stat('Total Pembelian', rp(report.beli), 'Dari supplier')}
+          {stat('Total Pembelian', rp(report.beli), 'Periode ini')}
           {stat(
             'Tagihan Belum Lunas',
             rp(unpaid.reduce((a, u) => a + u.amt, 0)),
             `${unpaid.length} tagihan`,
             'var(--danger)',
           )}
+        </div>
+
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-h">
+            <h3>Biaya Operasional</h3>
+            <Link className="btn sm" href="/pengeluaran">
+              Kelola
+            </Link>
+          </div>
+          <div className="card-b" style={{ paddingTop: 4 }}>
+            {report.expenses.length ? (
+              <>
+                <div className="sumrow" style={{ marginBottom: 8 }}>
+                  <span>Periode ini · {report.expenses.length} catatan</span>
+                  <b style={{ color: 'var(--danger)' }}>{rp(report.biaya)}</b>
+                </div>
+                {report.expenseByCat.map(([cat, total]) => {
+                  const pct = report.biaya ? Math.round((total / report.biaya) * 100) : 0
+                  return (
+                    <div className="list-row" key={cat}>
+                      <span className="small b">{cat}</span>
+                      <span className="small" style={{ textAlign: 'right', flex: 'none' }}>
+                        {rp(total)} <span className="muted">· {pct}%</span>
+                      </span>
+                    </div>
+                  )
+                })}
+              </>
+            ) : (
+              <div className="empty">Belum ada biaya operasional pada periode ini</div>
+            )}
+          </div>
         </div>
 
       <div className="grid g2" style={{ marginTop: 16 }}>

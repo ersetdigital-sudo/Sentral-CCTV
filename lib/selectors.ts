@@ -25,6 +25,29 @@ export const purTotal = (p: { items: { qty: number; cost: number }[] }) =>
 export const supTotal = (db: DB, sid: string) =>
   db.purchases.filter((p) => p.supplierId === sid).reduce((a, p) => a + purTotal(p), 0)
 
+export type CashFlow = {
+  /** Uang bersih yang diterima dari penjualan (DP/pelunasan, sudah dikurangi kembalian). */
+  salesIn: number
+  /** Uang yang sudah diterima dari jasa instalasi. */
+  jobsIn: number
+  totalIn: number
+  /** Seluruh belanja ke distributor (semua pembelian lunas saat order). */
+  purchasesOut: number
+  /** Biaya operasional toko (listrik, sewa, gaji, dll). */
+  expensesOut: number
+  balance: number
+}
+
+/** Saldo kas: semua uang masuk − belanja distributor − biaya operasional. */
+export function cashFlow(db: DB): CashFlow {
+  const salesIn = db.sales.reduce((a, s) => a + s.paid - s.change, 0)
+  const jobsIn = db.jobs.reduce((a, j) => a + j.paidAmount, 0)
+  const totalIn = salesIn + jobsIn
+  const purchasesOut = db.purchases.reduce((a, p) => a + purTotal(p), 0)
+  const expensesOut = db.expenses.reduce((a, e) => a + e.amount, 0)
+  return { salesIn, jobsIn, totalIn, purchasesOut, expensesOut, balance: totalIn - purchasesOut - expensesOut }
+}
+
 export const custSales = (db: DB, cid: string) => db.sales.filter((s) => s.custId === cid)
 export const custJobs = (db: DB, cid: string) => db.jobs.filter((j) => j.custId === cid)
 

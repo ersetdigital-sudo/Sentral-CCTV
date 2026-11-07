@@ -156,6 +156,31 @@ Semua data masih **data demo fiktif** (sama seperti HTML asli):
 - CSS aplikasi sengaja **tidak** dibungkus `@layer` (sama seperti file asli), supaya utility
   class Tailwind tidak menimpa class kustom seperti `grid` / `block`.
 
+## Penambahan (v12) — saldo kas & biaya operasional
+
+**Saldo Kas (otomatis)**
+- Kartu **Saldo Kas** muncul di Dashboard dan Laporan: semua uang masuk
+  (penjualan setelah dikurangi kembalian + pembayaran instalasi) dikurangi
+  belanja distributor dan biaya operasional.
+- Rincian **Uang Masuk / Belanja / Operasional** + persentase pemasukan terpakai.
+- Saldo dihitung ulang otomatis setiap ada transaksi, pelunasan piutang,
+  pembelian, atau biaya operasional baru.
+
+**Biaya Operasional (`/pengeluaran`)**
+- Halaman baru untuk mencatat biaya listrik, air, internet, sewa, gaji,
+  transport, perawatan, ATK, marketing, dan lain-lain.
+- Ringkasan **bulan ini**, **semua waktu**, dan **kategori terbesar**;
+  bisa dicari, difilter per kategori, diubah, dan dihapus.
+- Biaya otomatis mengurangi Saldo Kas dan ikut di Laporan + ekspor CSV.
+- Tabel baru `expenses` (Supabase, RLS admin). Skema idempotent:
+  `SUPABASE_ACCESS_TOKEN=sbp_xxx npm run db:push` bila project baru.
+  Aplikasi tetap jalan (biaya kosong) sebelum tabelnya dibuat.
+
+**Pembelian tanpa hutang**
+- Semua pembelian ke distributor dicatat **Lunas** saat order; pilihan status
+  bayar dan tombol "Tandai Lunas" dihapus. Status penerimaan barang tetap ada
+  untuk menambah stok saat barang datang.
+
 ## Penambahan (v11) — teknisi, nota pemasangan PDF & tipe harga grosir
 
 **Daftar Teknisi (`/teknisi`)**
