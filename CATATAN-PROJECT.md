@@ -43,16 +43,16 @@ Konversi 1:1 dari mockup HTML statis (`legacy/`) ke Next.js App Router.
   `jobs.materials`), nomor dokumen pakai kolom `text` + `sort_order`
   (bukan serial). `stock_log` tidak punya id aplikasi → diganti utuh saat simpan.
 
-### Snapshot data (per 6 Nov 2026)
+### Snapshot data (per 7 Nov 2026)
 
 | Tabel | Baris | Catatan |
 |---|---|---|
-| products | 91 | stok total 892, 10 kosong, 7 di bawah minimum |
-| sales | 23 | Okt 14 trx Rp10.666.000 · Nov 9 trx Rp6.403.000 |
-| customers | 12 | piutang berjalan ± Rp1.783.000 |
+| products | 91 | stok total 885, 11 kosong, 8 di bawah minimum |
+| sales | 26 | Okt 14 trx Rp10.666.000 · Nov 12 trx Rp8.573.000 |
+| customers | 14 | piutang berjalan Rp6.264.000 |
 | purchases | 5 | Rp1.943.000, semua Lunas + diterima |
 | expenses | 0 | Baru (7 Nov 2026), biaya operasional |
-| stock_log | 218 | Masuk / Keluar / Penyesuaian |
+| stock_log | 223 | Masuk / Keluar / Penyesuaian |
 | technicians | 11 | |
 | categories | 20 | |
 | suppliers | 2 | |
@@ -61,6 +61,9 @@ Konversi 1:1 dari mockup HTML statis (`legacy/`) ke Next.js App Router.
 | counters | 1 | generator nomor INV / job / purchase |
 
 Tidak ada storage bucket, tidak ada edge function.
+
+- Saldo kas per 7 Nov: **Rp11.032.000** (uang masuk Rp12.975.000 −
+  belanja Rp1.943.000; biaya operasional masih Rp0).
 
 ## 4. Cara menjalankan
 
@@ -79,13 +82,13 @@ npm run dev            # http://localhost:3000
 ```
 app/(app)/*        halaman: dashboard, kasir, transaksi, inventory, kategori,
                    supplier, pembelian, instalasi, teknisi, pelanggan,
-                   piutang, laporan, pengaturan
+                   piutang, pengeluaran, laporan, pengaturan
 app/api/nota/[id]  PDF nota
-components/views/  satu file per halaman
+components/views/  satu file per halaman (termasuk ExpensesView)
 lib/store.tsx      load semua data sekali, update() kirim diff per tabel
 lib/supabase/db.ts satu-satunya tempat mapping camelCase ↔ snake_case
-lib/selectors.ts   harga, total job, piutang, top produk, adjustStock
-lib/nav.ts         ROUTES — daftar route yang benar (14 item)
+lib/selectors.ts   harga, total job, piutang, top produk, cashFlow, adjustStock
+lib/nav.ts         ROUTES — daftar route yang benar (15 item)
 lib/format.ts      dayKey, isoDate, daysAgo, addDays, rp
 proxy.ts           pengganti middleware: refresh sesi + guard login
 legacy/            arsip HTML lama, TIDAK dipakai app Next
@@ -93,10 +96,17 @@ legacy/            arsip HTML lama, TIDAK dipakai app Next
 
 ## 6. Riwayat kerja
 
+- `dcccdda` — saldo kas otomatis + biaya operasional (push ke `main`):
+  tabel `expenses`, halaman `/pengeluaran`, `cashFlow()` di `lib/selectors.ts`,
+  kartu `CashCard` (masuk/belanja/operasional), CSV laporan, dan pembelian
+  selalu lunas. Skema `expenses` sudah diterapkan di Supabase (additive,
+  RLS aktif, 0 baris).
 - `2ad39ba` — hapus teks "Mode demo · data tersimpan di browser" di sidebar
   (`components/Sidebar.tsx`). Elemen `.side-foot` dihapus; CSS-nya dibiarkan
   karena legacy masih pakai.
-- Sudah diverifikasi di browser (login → `/dashboard`, data Supabase tampil).
+- Verifikasi 7 Nov: CRUD biaya operasional di browser + saldo Dashboard cocok
+  (Rp12.975.000 − Rp1.943.000 = Rp11.032.000); `tsc --noEmit` dan
+  `next build` lolos.
 - `tsconfig.json` sering diubah otomatis `next dev` (tambah
   `.next/dev/dev/types/**/*.ts`). Jangan ikutkan di commit.
 
@@ -108,8 +118,13 @@ legacy/            arsip HTML lama, TIDAK dipakai app Next
 - `app/login/actions.ts` `safeNext()` hanya cek string diawali `/`, jadi
   `?next=/path-ngawur` bikin 404 setelah login. Belum diperbaiki.
 - `.env.local` gitignored via pola `.env*.local`.
+- Supabase REST mengembalikan `PGRST205` ("Could not find the table ...
+  schema cache") untuk tabel yang belum dibuat, **bukan** `42P01`. Tabel
+  opsional (`expenses`, `technicians`, `categories`) harus menerima keduanya —
+  lihat `isMissingTable()` di `lib/supabase/db.ts`. Kalau tidak, seluruh data
+  gagal dimuat dan dashboard kosong.
 
-## 8. Pekerjaan berjalan — keluhan Ipan (6 Nov 2026)
+## 8. Keluhan & keputusan Ipan (6–7 Nov 2026)
 
 ### (1) Target bulanan tidak reset di bulan baru — BUG
 
@@ -123,12 +138,12 @@ tgt('Instalasi', allTimeSelesai + 6,  12,          ...)  // +6 karangan
 
 - Target 120jt / 150 trx / 12 job hardcoded; tidak ada di `Settings`
   (`lib/types.ts:127-141`) maupun tabel `settings`.
-- Tampilan saat ini: Omzet 26% (Rp31.529.600), Transaksi 69/150, Instalasi 6/12 —
-  padahal omzet November Rp6.403.000 (9 trx).
+- Tampilan saat ini: Omzet 23% (Rp27.433.600), Transaksi 78/150, Instalasi 6/12 —
+  padahal omzet November Rp8.573.000 (12 trx).
 - Bug samping: `DashboardView.tsx:123` menulis "{db.sales.length} transaksi
   minggu ini" padahal itu total sepanjang masa.
 
-### (2) Uang tunai tidak terpotong belanja — SELESAI (7 Nov 2026)
+### (2) Uang tunai tidak terpotong belanja + biaya operasional — SELESAI (7 Nov 2026, `dcccdda`)
 
 Keputusan Ipan:
 
